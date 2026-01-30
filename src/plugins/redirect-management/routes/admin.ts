@@ -208,6 +208,11 @@ export function createRedirectAdminRoutes(): Hono {
       console.log('[Redirect Admin] Service result:', JSON.stringify({ success: result.success, error: result.error, warning: result.warning }, null, 2))
 
       if (result.success) {
+        // For HTMX requests, use HX-Redirect header to trigger client-side redirect
+        // For non-HTMX requests, use standard redirect
+        if (c.req.header('HX-Request')) {
+          return c.text('', 200, { 'HX-Redirect': '/admin/redirects' })
+        }
         return c.redirect('/admin/redirects')
       } else {
         // Return error/warning fragments for HTMX to insert into #form-messages
@@ -262,6 +267,11 @@ export function createRedirectAdminRoutes(): Hono {
       console.log('[Redirect Admin] Service result:', JSON.stringify({ success: result.success, error: result.error, warning: result.warning }, null, 2))
 
       if (result.success) {
+        // For HTMX requests, use HX-Redirect header to trigger client-side redirect
+        // For non-HTMX requests, use standard redirect
+        if (c.req.header('HX-Request')) {
+          return c.text('', 200, { 'HX-Redirect': '/admin/redirects' })
+        }
         return c.redirect('/admin/redirects')
       } else {
         // Return error/warning fragments for HTMX to insert into #form-messages
