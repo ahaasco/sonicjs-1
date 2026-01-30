@@ -336,7 +336,7 @@ function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEsc
           </tr>
         </thead>
         <tbody class="bg-white dark:bg-zinc-900 divide-y divide-zinc-200 dark:divide-zinc-800" id="redirectTableBody">
-          ${redirects.map(redirect => renderTableRow(redirect)).join('')}
+          ${redirects.map(redirect => renderTableRow(redirect))}
         </tbody>
       </table>
     </div>
@@ -600,7 +600,7 @@ function renderPagination(pagination: RedirectListPageData['pagination'], filter
                   </a>
                 `
               }
-            }).join('')}
+            })}
 
             ${page < totalPages ? html`
               <a href="${baseUrl}page=${page + 1}" class="relative inline-flex items-center px-2 py-2 rounded-r-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700">
