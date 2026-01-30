@@ -140,9 +140,9 @@ export interface RedirectOperationResult {
   /** Whether the operation was successful */
   success: boolean
   /** The redirect object (if operation succeeded) */
-  redirect?: Redirect
+  redirect?: Redirect | undefined
   /** Error message (if operation failed) */
-  error?: string
+  error?: string | undefined
   /** Warning message (if operation succeeded but with warnings) */
-  warning?: string
+  warning?: string | undefined
 }

@@ -71,7 +71,9 @@ export class RedirectService {
       if (!validation.isValid) {
         return {
           success: false,
-          error: validation.error
+          redirect: undefined,
+          error: validation.error,
+          warning: undefined
         }
       }
 
@@ -112,13 +114,16 @@ export class RedirectService {
       return {
         success: true,
         redirect: redirect!,
+        error: undefined,
         warning: validation.warning
       }
     } catch (error) {
       console.error('Error creating redirect:', error)
       return {
         success: false,
-        error: `Failed to create redirect: ${error instanceof Error ? error.message : String(error)}`
+        redirect: undefined,
+        error: `Failed to create redirect: ${error instanceof Error ? error.message : String(error)}`,
+        warning: undefined
       }
     }
   }
@@ -162,7 +167,9 @@ export class RedirectService {
       if (!existing) {
         return {
           success: false,
-          error: 'Redirect not found'
+          redirect: undefined,
+          error: 'Redirect not found',
+          warning: undefined
         }
       }
 
@@ -180,7 +187,9 @@ export class RedirectService {
         if (!validation.isValid) {
           return {
             success: false,
-            error: validation.error
+            redirect: undefined,
+            error: validation.error,
+            warning: undefined
           }
         }
       }
@@ -229,7 +238,9 @@ export class RedirectService {
         // Only updated_at would change, nothing to do
         return {
           success: true,
-          redirect: existing
+          redirect: existing,
+          error: undefined,
+          warning: undefined
         }
       }
 
@@ -245,13 +256,16 @@ export class RedirectService {
       return {
         success: true,
         redirect: updated!,
+        error: undefined,
         warning: validation?.warning
       }
     } catch (error) {
       console.error('Error updating redirect:', error)
       return {
         success: false,
-        error: `Failed to update redirect: ${error instanceof Error ? error.message : String(error)}`
+        redirect: undefined,
+        error: `Failed to update redirect: ${error instanceof Error ? error.message : String(error)}`,
+        warning: undefined
       }
     }
   }
@@ -267,18 +281,27 @@ export class RedirectService {
         .run()
 
       if (result.meta.changes > 0) {
-        return { success: true }
+        return {
+          success: true,
+          redirect: undefined,
+          error: undefined,
+          warning: undefined
+        }
       } else {
         return {
           success: false,
-          error: 'Redirect not found'
+          redirect: undefined,
+          error: 'Redirect not found',
+          warning: undefined
         }
       }
     } catch (error) {
       console.error('Error deleting redirect:', error)
       return {
         success: false,
-        error: `Failed to delete redirect: ${error instanceof Error ? error.message : String(error)}`
+        redirect: undefined,
+        error: `Failed to delete redirect: ${error instanceof Error ? error.message : String(error)}`,
+        warning: undefined
       }
     }
   }
