@@ -3,6 +3,7 @@ import type { RedirectSettings, Redirect, CreateRedirectInput, UpdateRedirectInp
 import type { D1Database } from '@cloudflare/workers-types'
 import { normalizeUrl } from '../utils/url-normalizer'
 import { validateRedirect, type ValidationResult } from '../utils/validator'
+import { invalidateRedirectCache } from '../middleware/redirect'
 
 export class RedirectService {
   constructor(private db: D1Database) {}
@@ -110,6 +111,9 @@ export class RedirectService {
 
       // Fetch the created redirect
       const redirect = await this.getById(id)
+
+      // Invalidate cache after successful creation
+      invalidateRedirectCache()
 
       return {
         success: true,
@@ -253,6 +257,9 @@ export class RedirectService {
       // Fetch updated redirect
       const updated = await this.getById(id)
 
+      // Invalidate cache after successful update
+      invalidateRedirectCache()
+
       return {
         success: true,
         redirect: updated!,
@@ -281,6 +288,9 @@ export class RedirectService {
         .run()
 
       if (result.meta.changes > 0) {
+        // Invalidate cache after successful deletion
+        invalidateRedirectCache()
+
         return {
           success: true,
           redirect: undefined,
