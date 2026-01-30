@@ -355,11 +355,14 @@ function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEsc
         }
 
         // Cycle through 3 states: none → asc → desc → none
-        if (!sortDirection[column] || sortDirection[column] === 'desc') {
+        if (!sortDirection[column]) {
+          // State 1: none → asc
           sortDirection[column] = 'asc';
         } else if (sortDirection[column] === 'asc') {
+          // State 2: asc → desc
           sortDirection[column] = 'desc';
         } else {
+          // State 3: desc → none
           sortDirection[column] = null;
         }
 
@@ -667,7 +670,7 @@ function renderPagination(pagination: RedirectListPageData['pagination'], filter
 function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedString> {
   return html`
     <!-- Single Delete Dialog -->
-    <dialog id="deleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md backdrop:bg-black backdrop:bg-opacity-50">
+    <dialog id="deleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md backdrop:bg-black backdrop:bg-opacity-50" style="margin: auto;">
       <div class="p-6">
         <h3 class="text-lg font-semibold text-zinc-950 dark:text-white mb-2">Delete Redirect</h3>
         <p id="deleteMessage" class="text-sm text-zinc-600 dark:text-zinc-400 mb-6"></p>
@@ -683,7 +686,7 @@ function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedS
     </dialog>
 
     <!-- Bulk Delete Dialog -->
-    <dialog id="bulkDeleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md backdrop:bg-black backdrop:bg-opacity-50">
+    <dialog id="bulkDeleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md backdrop:bg-black backdrop:bg-opacity-50" style="margin: auto;">
       <div class="p-6">
         <h3 class="text-lg font-semibold text-zinc-950 dark:text-white mb-2">Delete Multiple Redirects</h3>
         <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
