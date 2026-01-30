@@ -43,6 +43,10 @@ export interface Redirect {
   createdAt: number
   /** Timestamp when redirect was last updated (milliseconds) */
   updatedAt: number
+  /** Whether to include query params in URL matching */
+  includeQueryParams: boolean
+  /** Whether to preserve query params when redirecting */
+  preserveQueryParams: boolean
 }
 
 /**
@@ -69,4 +73,76 @@ export interface RedirectAnalytics {
   createdAt: number
   /** Timestamp when analytics record was last updated */
   updatedAt: number
+}
+
+/**
+ * Input type for creating a new redirect
+ */
+export interface CreateRedirectInput {
+  /** Source URL pattern to match */
+  source: string
+  /** Destination URL to redirect to */
+  destination: string
+  /** Type of pattern matching to use (default: EXACT) */
+  matchType?: MatchType
+  /** HTTP status code for the redirect (default: 301) */
+  statusCode?: StatusCode
+  /** Whether this redirect is currently active (default: true) */
+  isActive?: boolean
+  /** Whether to include query params in URL matching (default: false) */
+  includeQueryParams?: boolean
+  /** Whether to preserve query params when redirecting (default: false) */
+  preserveQueryParams?: boolean
+}
+
+/**
+ * Input type for updating an existing redirect
+ */
+export interface UpdateRedirectInput {
+  /** Source URL pattern to match */
+  source?: string
+  /** Destination URL to redirect to */
+  destination?: string
+  /** Type of pattern matching to use */
+  matchType?: MatchType
+  /** HTTP status code for the redirect */
+  statusCode?: StatusCode
+  /** Whether this redirect is currently active */
+  isActive?: boolean
+  /** Whether to include query params in URL matching */
+  includeQueryParams?: boolean
+  /** Whether to preserve query params when redirecting */
+  preserveQueryParams?: boolean
+}
+
+/**
+ * Filter options for listing redirects
+ */
+export interface RedirectFilter {
+  /** Filter by active status */
+  isActive?: boolean
+  /** Filter by status code */
+  statusCode?: StatusCode
+  /** Filter by match type */
+  matchType?: MatchType
+  /** Search term (searches source and destination) */
+  search?: string
+  /** Maximum number of results to return (default: 50) */
+  limit?: number
+  /** Number of results to skip (for pagination) */
+  offset?: number
+}
+
+/**
+ * Result of a redirect operation (create, update, delete)
+ */
+export interface RedirectOperationResult {
+  /** Whether the operation was successful */
+  success: boolean
+  /** The redirect object (if operation succeeded) */
+  redirect?: Redirect
+  /** Error message (if operation failed) */
+  error?: string
+  /** Warning message (if operation succeeded but with warnings) */
+  warning?: string
 }
