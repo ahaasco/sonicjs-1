@@ -16,6 +16,7 @@ import contactMessagesCollection from './collections/contact-messages.collection
 // Import plugins (manual mounting until auto-loading is implemented)
 import contactFormPlugin from './plugins/contact-form/index'
 import redirectManagementPlugin from './plugins/redirect-management/index'
+import { createRedirectMiddleware } from './plugins/redirect-management/middleware/redirect'
 
 // Register all custom collections
 registerCollections([
@@ -43,6 +44,9 @@ const coreApp = createSonicJSApp(config)
 // Create main app and mount plugin routes manually
 // (Plugin auto-mounting not yet implemented in core)
 const app = new Hono()
+
+// Mount redirect middleware early (intercepts before routing)
+app.use('*', createRedirectMiddleware())
 
 // Mount plugin routes
 if (contactFormPlugin.routes) {

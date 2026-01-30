@@ -3,6 +3,9 @@ import type { Plugin, PluginContext } from '@sonicjs-cms/core'
 import manifest from './manifest.json'
 import { RedirectService } from './services/redirect'
 
+// Export middleware for direct mounting in app
+export { createRedirectMiddleware, invalidateRedirectCache, warmRedirectCache } from './middleware/redirect'
+
 export function createRedirectPlugin(): Plugin {
   const builder = PluginBuilder.create({
     name: manifest.id,
