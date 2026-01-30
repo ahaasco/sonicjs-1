@@ -177,10 +177,33 @@ function hasActiveFilters(filters: RedirectListPageData['filters']): boolean {
  */
 function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEscapedString> {
   return html`
+    <!-- Bulk Action Bar (hidden by default) -->
+    <div id="bulkActionBar" class="hidden px-6 py-3 bg-indigo-50 dark:bg-indigo-900/20 border-b border-zinc-200 dark:border-zinc-800">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-zinc-900 dark:text-zinc-100">
+          <span id="bulkSelectedCount">0</span> items selected
+        </div>
+        <button
+          onclick="showBulkDeleteDialog()"
+          class="inline-flex items-center px-3 py-1.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500"
+        >
+          Delete Selected
+        </button>
+      </div>
+    </div>
+
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
         <thead class="bg-zinc-50 dark:bg-zinc-800/50">
           <tr>
+            <th scope="col" class="px-6 py-3 w-12">
+              <input
+                type="checkbox"
+                id="selectAll"
+                onchange="toggleSelectAll(this.checked)"
+                class="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+              />
+            </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700" onclick="sortTable('source')">
               Source URL
               <span class="ml-1">↕</span>
@@ -249,8 +272,17 @@ function renderTableRow(redirect: Redirect): HtmlEscapedString | Promise<HtmlEsc
       data-statuscode="${redirect.statusCode}"
       data-matchtype="${redirect.matchType}"
       data-isactive="${redirect.isActive ? '1' : '0'}"
+      data-id="${redirect.id}"
       class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
     >
+      <td class="px-6 py-4 whitespace-nowrap">
+        <input
+          type="checkbox"
+          class="redirect-checkbox h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+          value="${redirect.id}"
+          onchange="updateBulkSelection()"
+        />
+      </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
         <span class="inline-block max-w-xs truncate" title="${redirect.source}">
           ${redirect.source}
@@ -278,7 +310,7 @@ function renderTableRow(redirect: Redirect): HtmlEscapedString | Promise<HtmlEsc
           Edit
         </a>
         <button
-          onclick="confirmDelete('${redirect.id}', '${redirect.source.replace(/'/g, "\\'")}', '${redirect.destination.replace(/'/g, "\\'")}')"
+          onclick="confirmDelete('${redirect.id}', '${redirect.source.replace(/'/g, "\\'")}', '${redirect.destination.replace(/'/g, "\\'")}', ${(redirect as any).hitCount || 0})"
           class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
         >
           Delete
@@ -466,6 +498,7 @@ function renderPagination(pagination: RedirectListPageData['pagination'], filter
  */
 function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedString> {
   return html`
+    <!-- Single Delete Dialog -->
     <dialog id="deleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0">
       <div class="p-6">
         <h3 class="text-lg font-semibold text-zinc-950 dark:text-white mb-2">Delete Redirect</h3>
@@ -475,7 +508,25 @@ function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedS
             Cancel
           </button>
           <button id="confirmDeleteBtn" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500">
-            Delete
+            Delete Redirect
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Bulk Delete Dialog -->
+    <dialog id="bulkDeleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0">
+      <div class="p-6">
+        <h3 class="text-lg font-semibold text-zinc-950 dark:text-white mb-2">Delete Multiple Redirects</h3>
+        <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
+          Delete <span id="bulkDeleteCount" class="font-semibold">0</span> redirects? This action cannot be undone.
+        </p>
+        <div class="flex gap-3 justify-end">
+          <button onclick="closeBulkDeleteDialog()" class="px-4 py-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-800 rounded-lg ring-1 ring-inset ring-zinc-950/10 dark:ring-white/10 hover:bg-zinc-50 dark:hover:bg-zinc-700">
+            Cancel
+          </button>
+          <button id="confirmBulkDeleteBtn" class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-500">
+            Delete Selected
           </button>
         </div>
       </div>
@@ -484,10 +535,16 @@ function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedS
     <script>
       let deleteRedirectId = null;
 
-      function confirmDelete(id, source, destination) {
+      // Single delete
+      function confirmDelete(id, source, destination, hitCount) {
         deleteRedirectId = id;
         const message = document.getElementById('deleteMessage');
-        message.textContent = 'Are you sure you want to delete the redirect from "' + source + '" to "' + destination + '"? This action cannot be undone.';
+        let text = 'Are you sure you want to delete the redirect from "' + source + '" to "' + destination + '"?';
+        if (hitCount && hitCount > 0) {
+          text += ' This redirect has been used ' + hitCount + ' times.';
+        }
+        text += ' This action cannot be undone.';
+        message.textContent = text;
         document.getElementById('deleteDialog').showModal();
       }
 
@@ -529,6 +586,90 @@ function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedS
       document.getElementById('deleteDialog').addEventListener('click', (e) => {
         if (e.target === document.getElementById('deleteDialog')) {
           closeDeleteDialog();
+        }
+      });
+
+      // Bulk selection
+      function toggleSelectAll(checked) {
+        const checkboxes = document.querySelectorAll('.redirect-checkbox');
+        checkboxes.forEach(checkbox => {
+          checkbox.checked = checked;
+        });
+        updateBulkSelection();
+      }
+
+      function updateBulkSelection() {
+        const checkboxes = document.querySelectorAll('.redirect-checkbox:checked');
+        const count = checkboxes.length;
+        const bulkActionBar = document.getElementById('bulkActionBar');
+        const selectedCount = document.getElementById('bulkSelectedCount');
+        const bulkDeleteCount = document.getElementById('bulkDeleteCount');
+        const selectAll = document.getElementById('selectAll');
+
+        selectedCount.textContent = count;
+        bulkDeleteCount.textContent = count;
+
+        if (count > 0) {
+          bulkActionBar.classList.remove('hidden');
+        } else {
+          bulkActionBar.classList.add('hidden');
+        }
+
+        // Update select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.redirect-checkbox');
+        selectAll.checked = count === allCheckboxes.length && count > 0;
+        selectAll.indeterminate = count > 0 && count < allCheckboxes.length;
+      }
+
+      // Bulk delete
+      function showBulkDeleteDialog() {
+        document.getElementById('bulkDeleteDialog').showModal();
+      }
+
+      function closeBulkDeleteDialog() {
+        document.getElementById('bulkDeleteDialog').close();
+      }
+
+      document.getElementById('confirmBulkDeleteBtn').addEventListener('click', async () => {
+        const checkboxes = document.querySelectorAll('.redirect-checkbox:checked');
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+
+        if (ids.length === 0) return;
+
+        try {
+          const authToken = document.cookie.split('; ').find(row => row.startsWith('auth_token='))?.split('=')[1];
+          const headers = {
+            'Content-Type': 'application/json'
+          };
+          if (authToken) {
+            headers['Authorization'] = 'Bearer ' + authToken;
+          }
+
+          const res = await fetch('/admin/redirects/bulk-delete', {
+            method: 'POST',
+            headers: headers,
+            credentials: 'same-origin',
+            body: JSON.stringify({ ids: ids })
+          });
+
+          if (res.ok) {
+            window.location.reload();
+          } else {
+            const data = await res.json();
+            alert('Failed to delete redirects: ' + (data.error || 'Unknown error'));
+          }
+        } catch (error) {
+          console.error('Error deleting redirects:', error);
+          alert('Failed to delete redirects');
+        }
+
+        closeBulkDeleteDialog();
+      });
+
+      // Close dialog on backdrop click
+      document.getElementById('bulkDeleteDialog').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('bulkDeleteDialog')) {
+          closeBulkDeleteDialog();
         }
       });
     </script>
