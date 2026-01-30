@@ -25,7 +25,7 @@
   "adminMenu": {
     "label": "Redirects",
     "icon": "arrow-right",
-    "path": "/admin/redirect-management/settings",
+    "path": "/admin/redirects",
     "order": 85
   }
 }
