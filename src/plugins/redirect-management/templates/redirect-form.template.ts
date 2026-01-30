@@ -6,13 +6,13 @@ export interface RedirectFormPageData {
   /** Whether this is an edit form (true) or create form (false) */
   isEdit: boolean
   /** The redirect being edited (only populated for edit forms) */
-  redirect?: Redirect
+  redirect?: Redirect | undefined
   /** Validation error message to display */
-  error?: string
+  error?: string | undefined
   /** Warning message to display */
-  warning?: string
+  warning?: string | undefined
   /** Preserved filter params from list page for back navigation */
-  referrerParams?: string
+  referrerParams?: string | undefined
   /** Current user */
   user: any
 }

@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
 import { RedirectService } from '../services/redirect'
 import { renderRedirectListPage } from '../templates/redirect-list.template'
-import type { RedirectFilter, MatchType, StatusCode } from '../types'
+import { renderRedirectFormPage } from '../templates/redirect-form.template'
+import type { RedirectFilter, MatchType, StatusCode, CreateRedirectInput, UpdateRedirectInput } from '../types'
 
 /**
  * Create admin route handlers for redirect management UI
@@ -92,6 +93,170 @@ export function createRedirectAdminRoutes(): Hono {
     } catch (error) {
       console.error('Error loading redirect list page:', error)
       return c.html('<h1>Error loading redirects</h1>', 500)
+    }
+  })
+
+  /**
+   * GET /admin/redirects/new
+   * Display the create redirect form
+   */
+  admin.get('/new', async (c: any) => {
+    try {
+      const ref = c.req.query('ref') || undefined
+      const html = renderRedirectFormPage({
+        isEdit: false,
+        referrerParams: ref,
+        user: c.get('user')
+      })
+      return c.html(html)
+    } catch (error) {
+      console.error('Error loading create form:', error)
+      return c.html('<h1>Error loading form</h1>', 500)
+    }
+  })
+
+  /**
+   * GET /admin/redirects/:id/edit
+   * Display the edit redirect form
+   */
+  admin.get('/:id/edit', async (c: any) => {
+    try {
+      const id = c.req.param('id')
+      const db = c.get('db') || c.env?.DB
+      if (!db) {
+        return c.html('<h1>Database not available</h1>', 500)
+      }
+
+      const ref = c.req.query('ref') || undefined
+      const service = new RedirectService(db)
+      const redirect = await service.getById(id)
+
+      if (!redirect) {
+        return c.redirect('/admin/redirects')
+      }
+
+      const html = renderRedirectFormPage({
+        isEdit: true,
+        redirect,
+        referrerParams: ref,
+        user: c.get('user')
+      })
+      return c.html(html)
+    } catch (error) {
+      console.error('Error loading edit form:', error)
+      return c.html('<h1>Error loading form</h1>', 500)
+    }
+  })
+
+  /**
+   * POST /admin/redirects
+   * Create a new redirect
+   */
+  admin.post('/', async (c: any) => {
+    try {
+      const db = c.get('db') || c.env?.DB
+      if (!db) {
+        return c.html('<h1>Database not available</h1>', 500)
+      }
+
+      const body = await c.req.parseBody()
+      const input: CreateRedirectInput = {
+        source: body.source as string,
+        destination: body.destination as string,
+        statusCode: (parseInt(body.status_code as string) || 301) as StatusCode,
+        matchType: (parseInt(body.match_type as string) || 0) as MatchType,
+        includeQueryParams: body.include_query_params === '1',
+        preserveQueryParams: body.preserve_query_params === '1',
+        isActive: body.active === '1'
+      }
+
+      const userId = c.get('user')?.id || 'system'
+      const service = new RedirectService(db)
+      const result = await service.create(input, userId)
+
+      if (result.success) {
+        return c.redirect('/admin/redirects')
+      } else {
+        const html = renderRedirectFormPage({
+          isEdit: false,
+          redirect: undefined,
+          error: result.error || undefined,
+          warning: result.warning || undefined,
+          referrerParams: undefined,
+          user: c.get('user')
+        })
+        return c.html(html)
+      }
+    } catch (error) {
+      console.error('Error creating redirect:', error)
+      const html = renderRedirectFormPage({
+        isEdit: false,
+        redirect: undefined,
+        error: `Failed to create redirect: ${error instanceof Error ? error.message : String(error)}`,
+        warning: undefined,
+        referrerParams: undefined,
+        user: c.get('user')
+      })
+      return c.html(html)
+    }
+  })
+
+  /**
+   * PUT /admin/redirects/:id
+   * Update an existing redirect
+   */
+  admin.put('/:id', async (c: any) => {
+    try {
+      const id = c.req.param('id')
+      const db = c.get('db') || c.env?.DB
+      if (!db) {
+        return c.html('<h1>Database not available</h1>', 500)
+      }
+
+      const body = await c.req.parseBody()
+      const input: UpdateRedirectInput = {
+        source: body.source as string,
+        destination: body.destination as string,
+        statusCode: (parseInt(body.status_code as string) || 301) as StatusCode,
+        matchType: (parseInt(body.match_type as string) || 0) as MatchType,
+        includeQueryParams: body.include_query_params === '1',
+        preserveQueryParams: body.preserve_query_params === '1',
+        isActive: body.active === '1'
+      }
+
+      const service = new RedirectService(db)
+      const result = await service.update(id, input)
+
+      if (result.success) {
+        return c.redirect('/admin/redirects')
+      } else {
+        const html = renderRedirectFormPage({
+          isEdit: true,
+          redirect: result.redirect || undefined,
+          error: result.error || undefined,
+          warning: result.warning || undefined,
+          referrerParams: undefined,
+          user: c.get('user')
+        })
+        return c.html(html)
+      }
+    } catch (error) {
+      console.error('Error updating redirect:', error)
+      const db = c.get('db') || c.env?.DB
+      if (!db) {
+        return c.html('<h1>Database not available</h1>', 500)
+      }
+      const service = new RedirectService(db)
+      const redirect = await service.getById(c.req.param('id'))
+      const html = renderRedirectFormPage({
+        isEdit: true,
+        redirect: redirect || undefined,
+        error: `Failed to update redirect: ${error instanceof Error ? error.message : String(error)}`,
+        warning: undefined,
+        referrerParams: undefined,
+        user: c.get('user')
+      })
+      return c.html(html)
     }
   })
 
