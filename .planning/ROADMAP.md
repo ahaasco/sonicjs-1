@@ -40,17 +40,19 @@ Plans:
 **Goal**: Redirects execute reliably with validation, caching, and middleware interception
 **Depends on**: Phase 1
 **Requirements**: REDIR-01, REDIR-02, REDIR-03, REDIR-04, REDIR-05, REDIR-06, VALID-01, VALID-02, VALID-03, VALID-04, STATUS-01, STATUS-02, STATUS-03, STATUS-04, STATUS-05, EXEC-01, EXEC-02, EXEC-03, EXEC-04, EXEC-05
+**Plans**: 4 plans
 **Success Criteria** (what must be TRUE):
   1. User visiting source URL is redirected to destination URL with correct HTTP status code
   2. Redirect lookup completes in sub-millisecond time (cache hit) or under 10ms (cache miss)
-  3. System prevents circular redirects before saving (A→B→A blocked)
-  4. System detects redirect chains and warns admin (A→B→C detected)
+  3. System prevents circular redirects before saving (A->B->A blocked)
+  4. System detects redirect chains and warns admin (A->B->C detected)
   5. Inactive redirects do not execute (only active redirects trigger)
-**Plans**: TBD
 
 Plans:
-- [ ] 02-01: TBD during planning
-- [ ] 02-02: TBD during planning
+- [ ] 02-01-PLAN.md — URL normalization utilities and LRU cache wrapper
+- [ ] 02-02-PLAN.md — Validation and circular redirect detection
+- [ ] 02-03-PLAN.md — Redirect service CRUD operations with validation
+- [ ] 02-04-PLAN.md — Redirect middleware and application integration
 
 ### Phase 3: Admin UI
 **Goal**: Admins can create, edit, view, search, filter, and delete redirects via admin interface
@@ -119,7 +121,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Plugin Structure | 2/2 | Complete | 2026-01-30 |
-| 2. Core Redirect Engine | 0/0 | Not started | - |
+| 2. Core Redirect Engine | 0/4 | Not started | - |
 | 3. Admin UI | 0/0 | Not started | - |
 | 4. CSV Import/Export | 0/0 | Not started | - |
 | 5. API Endpoints | 0/0 | Not started | - |
