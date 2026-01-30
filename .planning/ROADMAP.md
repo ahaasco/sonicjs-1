@@ -12,7 +12,7 @@ This roadmap delivers a redirect management plugin for SonicJS across 6 phases. 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation & Plugin Structure** - Plugin scaffold, collection schema, database migrations
+- [x] **Phase 1: Foundation & Plugin Structure** - Plugin scaffold, collection schema, database migrations
 - [ ] **Phase 2: Core Redirect Engine** - Redirect execution, validation, middleware, caching
 - [ ] **Phase 3: Admin UI** - Forms, list views, search, filters, delete confirmations
 - [ ] **Phase 4: CSV Import/Export** - Bulk operations for site migrations
@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Plugin scaffold, types, service, and database migration
-- [ ] 01-02-PLAN.md — Wire plugin into application (gap closure)
+- [x] 01-02-PLAN.md — Wire plugin into application (gap closure)
 
 ### Phase 2: Core Redirect Engine
 **Goal**: Redirects execute reliably with validation, caching, and middleware interception
@@ -118,7 +118,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Plugin Structure | 1/2 | In Progress | - |
+| 1. Foundation & Plugin Structure | 2/2 | Complete | 2026-01-30 |
 | 2. Core Redirect Engine | 0/0 | Not started | - |
 | 3. Admin UI | 0/0 | Not started | - |
 | 4. CSV Import/Export | 0/0 | Not started | - |
