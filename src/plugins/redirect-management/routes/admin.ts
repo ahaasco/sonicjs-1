@@ -22,14 +22,15 @@ export function createRedirectAdminRoutes(): Hono {
   const admin = new Hono()
 
   /**
-   * GET /admin/redirects
+   * GET / (mounted at /admin/redirects)
    * Display the redirect list page with filtering and pagination
    */
   admin.get('/', async (c: any) => {
     try {
-      // Get DB from context
-      const db = c.get('db') || c.env?.DB
+      // Get DB from context (Cloudflare Workers env)
+      const db = c.env?.DB || c.get('db')
       if (!db) {
+        console.error('[Redirect Admin] Database not available. c.env:', c.env, 'c.get(db):', c.get('db'))
         return c.html('<h1>Database not available</h1>', 500)
       }
 
@@ -133,7 +134,7 @@ export function createRedirectAdminRoutes(): Hono {
   admin.get('/:id/edit', async (c: any) => {
     try {
       const id = c.req.param('id')
-      const db = c.get('db') || c.env?.DB
+      const db = c.env?.DB || c.get('db')
       if (!db) {
         return c.html('<h1>Database not available</h1>', 500)
       }
@@ -170,7 +171,7 @@ export function createRedirectAdminRoutes(): Hono {
     console.error('[Redirect Admin] Request headers:', Object.fromEntries(c.req.raw.headers.entries()))
 
     try {
-      const db = c.get('db') || c.env?.DB
+      const db = c.env?.DB || c.get('db')
       console.error('[Redirect Admin] Database available:', !!db)
       if (!db) {
         console.error('[Redirect Admin] NO DATABASE - returning 500')
@@ -193,7 +194,14 @@ export function createRedirectAdminRoutes(): Hono {
 
       console.log('[Redirect Admin] Parsed input:', JSON.stringify(input, null, 2))
 
-      const userId = c.get('user')?.id || 'system'
+      // Get user ID from context or fallback to first admin user
+      let userId = c.get('user')?.id
+      if (!userId) {
+        // Fallback: get first admin user from database
+        const adminUser = await db.prepare('SELECT id FROM users WHERE role = ? LIMIT 1').bind('admin').first()
+        userId = adminUser?.id as string || 'system'
+      }
+
       const service = new RedirectService(db)
       const result = await service.create(input, userId)
 
@@ -228,7 +236,7 @@ export function createRedirectAdminRoutes(): Hono {
   admin.put('/:id', async (c: any) => {
     try {
       const id = c.req.param('id')
-      const db = c.get('db') || c.env?.DB
+      const db = c.env?.DB || c.get('db')
       if (!db) {
         return c.html('<h1>Database not available</h1>', 500)
       }
@@ -281,7 +289,7 @@ export function createRedirectAdminRoutes(): Hono {
   admin.delete('/:id', async (c: any) => {
     try {
       const id = c.req.param('id')
-      const db = c.get('db') || c.env?.DB
+      const db = c.env?.DB || c.get('db')
       if (!db) {
         return c.json({ success: false, error: 'Database not available' }, 500)
       }
@@ -306,7 +314,7 @@ export function createRedirectAdminRoutes(): Hono {
    */
   admin.post('/bulk-delete', async (c: any) => {
     try {
-      const db = c.get('db') || c.env?.DB
+      const db = c.env?.DB || c.get('db')
       if (!db) {
         return c.json({ success: false, error: 'Database not available' }, 500)
       }
