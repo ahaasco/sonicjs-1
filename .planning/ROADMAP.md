@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Goal**: Plugin infrastructure is set up with collection schema and database ready for redirect storage
 **Depends on**: Nothing (first phase)
 **Requirements**: Foundation for all other requirements
-**Plans**: 1 plan
+**Plans**: 2 plans
 **Success Criteria** (what must be TRUE):
   1. Plugin is registered and appears in SonicJS plugin system
   2. Redirects collection schema is defined with all required fields (source, destination, match type, status code, active)
@@ -33,7 +33,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Plugin lifecycle hooks (onLoad, onReady) execute without errors
 
 Plans:
-- [ ] 01-01-PLAN.md — Plugin scaffold, types, service, and database migration
+- [x] 01-01-PLAN.md — Plugin scaffold, types, service, and database migration
+- [ ] 01-02-PLAN.md — Wire plugin into application (gap closure)
 
 ### Phase 2: Core Redirect Engine
 **Goal**: Redirects execute reliably with validation, caching, and middleware interception
@@ -117,7 +118,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Plugin Structure | 0/1 | Planned | - |
+| 1. Foundation & Plugin Structure | 1/2 | In Progress | - |
 | 2. Core Redirect Engine | 0/0 | Not started | - |
 | 3. Admin UI | 0/0 | Not started | - |
 | 4. CSV Import/Export | 0/0 | Not started | - |
