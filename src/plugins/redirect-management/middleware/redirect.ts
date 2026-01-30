@@ -1,9 +1,8 @@
 import type { Context, Next } from 'hono'
 import type { D1Database } from '@cloudflare/workers-types'
 import { normalizeUrl, normalizeUrlWithQuery } from '../utils/url-normalizer'
-import { RedirectCache, CacheEntry } from '../utils/cache'
+import { RedirectCache } from '../utils/cache'
 import { RedirectService } from '../services/redirect'
-import type { Redirect } from '../types'
 
 // Module-level cache (singleton per worker instance)
 let redirectCache: RedirectCache | null = null
@@ -20,27 +19,34 @@ export function createRedirectMiddleware(options: RedirectMiddlewareOptions = {}
     redirectCache = new RedirectCache(cacheSize)
   }
 
-  return async (c: Context, next: Next) => {
-    const db = c.env?.D1 as D1Database | undefined
+  return async (c: Context, next: Next): Promise<Response | void> => {
+    const url = new URL(c.req.url)
+    const pathname = url.pathname
+
+    // Skip redirect processing for admin routes
+    if (pathname.startsWith('/admin/redirects')) {
+      console.error('[RedirectMiddleware] Skipping admin route:', pathname, c.req.method)
+      await next()
+      return
+    }
+
+    const db = (c.env?.DB || c.get('db')) as D1Database | undefined
     if (!db) {
       // No database, skip redirect processing
       await next()
       return
     }
 
-    const url = new URL(c.req.url)
-    const pathname = url.pathname
-
     // Normalize URL for matching
     const normalizedPath = normalizeUrl(pathname)
 
     // Check cache first (sub-millisecond)
-    let cached = redirectCache.get(normalizedPath)
+    let cached = redirectCache?.get(normalizedPath)
 
     if (!cached) {
       // Also try with full path + query for query-inclusive redirects
       const normalizedWithQuery = normalizeUrlWithQuery(url.pathname + url.search, true)
-      cached = redirectCache.get(normalizedWithQuery)
+      cached = redirectCache?.get(normalizedWithQuery)
     }
 
     if (!cached) {
@@ -59,7 +65,7 @@ export function createRedirectMiddleware(options: RedirectMiddlewareOptions = {}
           includeQueryParams: redirect.includeQueryParams,
           preserveQueryParams: redirect.preserveQueryParams
         }
-        redirectCache.set(normalizedPath, cached)
+        redirectCache?.set(normalizedPath, cached)
 
         // Also record hit asynchronously (don't block redirect)
         recordHitAsync(db, redirect.id)
@@ -92,7 +98,7 @@ export function createRedirectMiddleware(options: RedirectMiddlewareOptions = {}
       }
 
       // Record hit asynchronously (cache hit path)
-      recordHitAsync(c.env?.D1 as D1Database, cached.id)
+      recordHitAsync((c.env?.DB || c.get('db')) as D1Database, cached.id)
 
       // Execute redirect
       return c.redirect(destination, cached.statusCode as 301 | 302 | 307 | 308)
@@ -108,7 +114,7 @@ function recordHitAsync(db: D1Database | undefined, redirectId: string): void {
   if (!db) return
 
   // Use waitUntil if available (Cloudflare Workers), otherwise fire-and-forget
-  const promise = db
+  void db
     .prepare(`
       INSERT INTO redirect_analytics (id, redirect_id, hit_count, last_hit_at, created_at, updated_at)
       VALUES (?, ?, 1, ?, ?, ?)

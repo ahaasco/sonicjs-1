@@ -1,5 +1,4 @@
 import { Hono } from 'hono'
-import { html } from 'hono/html'
 import { RedirectService } from '../services/redirect'
 import { renderRedirectListPage } from '../templates/redirect-list.template'
 import { renderRedirectFormPage } from '../templates/redirect-form.template'
@@ -165,13 +164,23 @@ export function createRedirectAdminRoutes(): Hono {
    * Create a new redirect
    */
   admin.post('/', async (c: any) => {
+    console.error('=== POST /admin/redirects HANDLER HIT ===')
+    console.error('[Redirect Admin] Request URL:', c.req.url)
+    console.error('[Redirect Admin] Request method:', c.req.method)
+    console.error('[Redirect Admin] Request headers:', Object.fromEntries(c.req.raw.headers.entries()))
+
     try {
       const db = c.get('db') || c.env?.DB
+      console.error('[Redirect Admin] Database available:', !!db)
       if (!db) {
+        console.error('[Redirect Admin] NO DATABASE - returning 500')
         return c.html('<h1>Database not available</h1>', 500)
       }
 
+      console.error('[Redirect Admin] About to parse body...')
       const body = await c.req.parseBody()
+      console.error('[Redirect Admin] POST /admin/redirects - Form body:', body)
+
       const input: CreateRedirectInput = {
         source: body.source as string,
         destination: body.destination as string,
@@ -182,9 +191,13 @@ export function createRedirectAdminRoutes(): Hono {
         isActive: body.active === '1'
       }
 
+      console.log('[Redirect Admin] Parsed input:', JSON.stringify(input, null, 2))
+
       const userId = c.get('user')?.id || 'system'
       const service = new RedirectService(db)
       const result = await service.create(input, userId)
+
+      console.log('[Redirect Admin] Service result:', JSON.stringify({ success: result.success, error: result.error, warning: result.warning }, null, 2))
 
       if (result.success) {
         return c.redirect('/admin/redirects')
@@ -192,6 +205,7 @@ export function createRedirectAdminRoutes(): Hono {
         // Return error/warning fragments for HTMX to insert into #form-messages
         let html = ''
         if (result.error) {
+          console.log('[Redirect Admin] Returning 400 with error:', result.error)
           html += renderAlertFragment('error', result.error)
         }
         if (result.warning) {
@@ -200,7 +214,7 @@ export function createRedirectAdminRoutes(): Hono {
         return c.html(html || renderAlertFragment('error', 'An error occurred'), 400)
       }
     } catch (error) {
-      console.error('Error creating redirect:', error)
+      console.error('[Redirect Admin] Error creating redirect:', error)
       // Return error fragment for HTMX to insert into #form-messages
       const errorMessage = error instanceof Error ? error.message : String(error)
       return c.html(renderAlertFragment('error', `Failed to create redirect: ${errorMessage}`), 500)
@@ -220,6 +234,8 @@ export function createRedirectAdminRoutes(): Hono {
       }
 
       const body = await c.req.parseBody()
+      console.log('[Redirect Admin] PUT /admin/redirects/:id - Form body:', body)
+
       const input: UpdateRedirectInput = {
         source: body.source as string,
         destination: body.destination as string,
@@ -230,8 +246,12 @@ export function createRedirectAdminRoutes(): Hono {
         isActive: body.active === '1'
       }
 
+      console.log('[Redirect Admin] Parsed input:', JSON.stringify(input, null, 2))
+
       const service = new RedirectService(db)
       const result = await service.update(id, input)
+
+      console.log('[Redirect Admin] Service result:', JSON.stringify({ success: result.success, error: result.error, warning: result.warning }, null, 2))
 
       if (result.success) {
         return c.redirect('/admin/redirects')
@@ -239,6 +259,7 @@ export function createRedirectAdminRoutes(): Hono {
         // Return error/warning fragments for HTMX to insert into #form-messages
         let html = ''
         if (result.error) {
+          console.log('[Redirect Admin] Returning 400 with error:', result.error)
           html += renderAlertFragment('error', result.error)
         }
         if (result.warning) {
@@ -247,7 +268,7 @@ export function createRedirectAdminRoutes(): Hono {
         return c.html(html || renderAlertFragment('error', 'An error occurred'), 400)
       }
     } catch (error) {
-      console.error('Error updating redirect:', error)
+      console.error('[Redirect Admin] Error updating redirect:', error)
       const errorMessage = error instanceof Error ? error.message : String(error)
       return c.html(renderAlertFragment('error', `Failed to update redirect: ${errorMessage}`), 500)
     }
