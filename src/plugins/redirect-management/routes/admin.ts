@@ -1,8 +1,20 @@
 import { Hono } from 'hono'
+import { html } from 'hono/html'
 import { RedirectService } from '../services/redirect'
 import { renderRedirectListPage } from '../templates/redirect-list.template'
 import { renderRedirectFormPage } from '../templates/redirect-form.template'
 import type { RedirectFilter, MatchType, StatusCode, CreateRedirectInput, UpdateRedirectInput } from '../types'
+
+/**
+ * Render an alert message HTML fragment for HTMX
+ */
+function renderAlertFragment(type: 'error' | 'warning', message: string): string {
+  const colors = {
+    error: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400',
+    warning: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400'
+  }
+  return `<div class="rounded-lg border ${colors[type]} p-4 mb-4"><p class="text-sm">${message}</p></div>`
+}
 
 /**
  * Create admin route handlers for redirect management UI
@@ -177,27 +189,21 @@ export function createRedirectAdminRoutes(): Hono {
       if (result.success) {
         return c.redirect('/admin/redirects')
       } else {
-        const html = renderRedirectFormPage({
-          isEdit: false,
-          redirect: undefined,
-          error: result.error || undefined,
-          warning: result.warning || undefined,
-          referrerParams: undefined,
-          user: c.get('user')
-        })
-        return c.html(html)
+        // Return error/warning fragments for HTMX to insert into #form-messages
+        let html = ''
+        if (result.error) {
+          html += renderAlertFragment('error', result.error)
+        }
+        if (result.warning) {
+          html += renderAlertFragment('warning', result.warning)
+        }
+        return c.html(html || renderAlertFragment('error', 'An error occurred'), 400)
       }
     } catch (error) {
       console.error('Error creating redirect:', error)
-      const html = renderRedirectFormPage({
-        isEdit: false,
-        redirect: undefined,
-        error: `Failed to create redirect: ${error instanceof Error ? error.message : String(error)}`,
-        warning: undefined,
-        referrerParams: undefined,
-        user: c.get('user')
-      })
-      return c.html(html)
+      // Return error fragment for HTMX to insert into #form-messages
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return c.html(renderAlertFragment('error', `Failed to create redirect: ${errorMessage}`), 500)
     }
   })
 
@@ -230,33 +236,20 @@ export function createRedirectAdminRoutes(): Hono {
       if (result.success) {
         return c.redirect('/admin/redirects')
       } else {
-        const html = renderRedirectFormPage({
-          isEdit: true,
-          redirect: result.redirect || undefined,
-          error: result.error || undefined,
-          warning: result.warning || undefined,
-          referrerParams: undefined,
-          user: c.get('user')
-        })
-        return c.html(html)
+        // Return error/warning fragments for HTMX to insert into #form-messages
+        let html = ''
+        if (result.error) {
+          html += renderAlertFragment('error', result.error)
+        }
+        if (result.warning) {
+          html += renderAlertFragment('warning', result.warning)
+        }
+        return c.html(html || renderAlertFragment('error', 'An error occurred'), 400)
       }
     } catch (error) {
       console.error('Error updating redirect:', error)
-      const db = c.get('db') || c.env?.DB
-      if (!db) {
-        return c.html('<h1>Database not available</h1>', 500)
-      }
-      const service = new RedirectService(db)
-      const redirect = await service.getById(c.req.param('id'))
-      const html = renderRedirectFormPage({
-        isEdit: true,
-        redirect: redirect || undefined,
-        error: `Failed to update redirect: ${error instanceof Error ? error.message : String(error)}`,
-        warning: undefined,
-        referrerParams: undefined,
-        user: c.get('user')
-      })
-      return c.html(html)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return c.html(renderAlertFragment('error', `Failed to update redirect: ${errorMessage}`), 500)
     }
   })
 
