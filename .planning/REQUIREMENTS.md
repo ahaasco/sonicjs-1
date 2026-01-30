@@ -124,21 +124,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REDIR-01 | Phase 2 | Pending |
-| REDIR-02 | Phase 2 | Pending |
-| REDIR-03 | Phase 2 | Pending |
-| REDIR-04 | Phase 2 | Pending |
-| REDIR-05 | Phase 2 | Pending |
-| REDIR-06 | Phase 2 | Pending |
-| VALID-01 | Phase 2 | Pending |
-| VALID-02 | Phase 2 | Pending |
-| VALID-03 | Phase 2 | Pending |
-| VALID-04 | Phase 2 | Pending |
-| STATUS-01 | Phase 2 | Pending |
-| STATUS-02 | Phase 2 | Pending |
-| STATUS-03 | Phase 2 | Pending |
-| STATUS-04 | Phase 2 | Pending |
-| STATUS-05 | Phase 2 | Pending |
+| REDIR-01 | Phase 2 | Complete |
+| REDIR-02 | Phase 2 | Complete |
+| REDIR-03 | Phase 2 | Complete |
+| REDIR-04 | Phase 2 | Complete |
+| REDIR-05 | Phase 2 | Complete |
+| REDIR-06 | Phase 2 | Complete |
+| VALID-01 | Phase 2 | Complete |
+| VALID-02 | Phase 2 | Complete |
+| VALID-03 | Phase 2 | Complete |
+| VALID-04 | Phase 2 | Complete |
+| STATUS-01 | Phase 2 | Complete |
+| STATUS-02 | Phase 2 | Complete |
+| STATUS-03 | Phase 2 | Complete |
+| STATUS-04 | Phase 2 | Complete |
+| STATUS-05 | Phase 2 | Complete |
 | CSV-01 | Phase 4 | Pending |
 | CSV-02 | Phase 4 | Pending |
 | CSV-03 | Phase 4 | Pending |
@@ -151,11 +151,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-03 | Phase 5 | Pending |
 | API-04 | Phase 5 | Pending |
 | API-05 | Phase 5 | Pending |
-| EXEC-01 | Phase 2 | Pending |
-| EXEC-02 | Phase 2 | Pending |
-| EXEC-03 | Phase 2 | Pending |
-| EXEC-04 | Phase 2 | Pending |
-| EXEC-05 | Phase 2 | Pending |
+| EXEC-01 | Phase 2 | Complete |
+| EXEC-02 | Phase 2 | Complete |
+| EXEC-03 | Phase 2 | Complete |
+| EXEC-04 | Phase 2 | Complete |
+| EXEC-05 | Phase 2 | Complete |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |

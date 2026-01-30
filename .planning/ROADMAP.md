@@ -13,7 +13,7 @@ This roadmap delivers a redirect management plugin for SonicJS across 6 phases. 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Plugin Structure** - Plugin scaffold, collection schema, database migrations
-- [ ] **Phase 2: Core Redirect Engine** - Redirect execution, validation, middleware, caching
+- [x] **Phase 2: Core Redirect Engine** - Redirect execution, validation, middleware, caching
 - [ ] **Phase 3: Admin UI** - Forms, list views, search, filters, delete confirmations
 - [ ] **Phase 4: CSV Import/Export** - Bulk operations for site migrations
 - [ ] **Phase 5: API Endpoints** - Programmatic redirect management for other plugins
@@ -49,10 +49,10 @@ Plans:
   5. Inactive redirects do not execute (only active redirects trigger)
 
 Plans:
-- [ ] 02-01-PLAN.md — URL normalization utilities and LRU cache wrapper
-- [ ] 02-02-PLAN.md — Validation and circular redirect detection
-- [ ] 02-03-PLAN.md — Redirect service CRUD operations with validation
-- [ ] 02-04-PLAN.md — Redirect middleware and application integration
+- [x] 02-01-PLAN.md — URL normalization utilities and LRU cache wrapper
+- [x] 02-02-PLAN.md — Validation and circular redirect detection
+- [x] 02-03-PLAN.md — Redirect service CRUD operations with validation
+- [x] 02-04-PLAN.md — Redirect middleware and application integration
 
 ### Phase 3: Admin UI
 **Goal**: Admins can create, edit, view, search, filter, and delete redirects via admin interface
@@ -121,7 +121,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Plugin Structure | 2/2 | Complete | 2026-01-30 |
-| 2. Core Redirect Engine | 0/4 | Not started | - |
+| 2. Core Redirect Engine | 4/4 | Complete | 2026-01-30 |
 | 3. Admin UI | 0/0 | Not started | - |
 | 4. CSV Import/Export | 0/0 | Not started | - |
 | 5. API Endpoints | 0/0 | Not started | - |
