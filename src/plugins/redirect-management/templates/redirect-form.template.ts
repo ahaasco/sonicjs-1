@@ -52,7 +52,7 @@ export function renderRedirectFormPage(data: RedirectFormPageData): HtmlEscapedS
       <!-- Form Container -->
       <div class="rounded-xl bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/10">
         <form
-          ${isEdit ? `hx-put="${formAction}"` : `hx-post="${formAction}"`}
+          hx-${isEdit ? 'put' : 'post'}="${formAction}"
           hx-target="#form-messages"
           hx-swap="innerHTML"
           class="p-6 space-y-8"
