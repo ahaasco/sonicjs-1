@@ -17,6 +17,7 @@ import contactMessagesCollection from './collections/contact-messages.collection
 import contactFormPlugin from './plugins/contact-form/index'
 import redirectManagementPlugin from './plugins/redirect-management/index'
 import { createRedirectMiddleware } from './plugins/redirect-management/middleware/redirect'
+import { createRedirectAdminRoutes } from './plugins/redirect-management/routes/admin'
 
 // Register all custom collections
 registerCollections([
@@ -55,12 +56,9 @@ if (contactFormPlugin.routes) {
   }
 }
 
-// Mount redirect management plugin routes
-if (redirectManagementPlugin.routes) {
-  for (const route of redirectManagementPlugin.routes) {
-    app.route(route.path, route.handler)
-  }
-}
+// Mount redirect management admin routes
+const redirectAdminRoutes = createRedirectAdminRoutes()
+app.route('/admin/redirects', redirectAdminRoutes)
 
 // Mount core app last (catch-all)
 app.route('/', coreApp)
