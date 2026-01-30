@@ -312,23 +312,23 @@ function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEsc
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700" onclick="sortTable('source')">
               Source URL
-              <span class="ml-1">↕</span>
+              <span id="sort-icon-source" class="ml-1 inline-block w-3">↕</span>
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700" onclick="sortTable('destination')">
               Destination URL
-              <span class="ml-1">↕</span>
+              <span id="sort-icon-destination" class="ml-1 inline-block w-3">↕</span>
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700" onclick="sortTable('statusCode')">
               Status
-              <span class="ml-1">↕</span>
+              <span id="sort-icon-statusCode" class="ml-1 inline-block w-3">↕</span>
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700" onclick="sortTable('matchType')">
               Match Type
-              <span class="ml-1">↕</span>
+              <span id="sort-icon-matchType" class="ml-1 inline-block w-3">↕</span>
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700" onclick="sortTable('isActive')">
               Active
-              <span class="ml-1">↕</span>
+              <span id="sort-icon-isActive" class="ml-1 inline-block w-3">↕</span>
             </th>
             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
               Actions
@@ -343,6 +343,7 @@ function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEsc
 
     <script>
       let sortDirection = {};
+      let currentSortColumn = null;
 
       function sortTable(column) {
         const tbody = document.getElementById('redirectTableBody');
@@ -362,6 +363,26 @@ function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEsc
         });
 
         rows.forEach(row => tbody.appendChild(row));
+
+        // Update sort icons
+        updateSortIcons(column, ascending);
+      }
+
+      function updateSortIcons(column, ascending) {
+        // Reset all icons to default
+        const allColumns = ['source', 'destination', 'statusCode', 'matchType', 'isActive'];
+        allColumns.forEach(col => {
+          const icon = document.getElementById('sort-icon-' + col);
+          if (icon) {
+            if (col === column) {
+              icon.textContent = ascending ? '↑' : '↓';
+              icon.classList.add('text-indigo-600', 'dark:text-indigo-400');
+            } else {
+              icon.textContent = '↕';
+              icon.classList.remove('text-indigo-600', 'dark:text-indigo-400');
+            }
+          }
+        });
       }
     </script>
   `
@@ -621,7 +642,7 @@ function renderPagination(pagination: RedirectListPageData['pagination'], filter
 function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedString> {
   return html`
     <!-- Single Delete Dialog -->
-    <dialog id="deleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0">
+    <dialog id="deleteDialog" class="fixed inset-0 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md">
       <div class="p-6">
         <h3 class="text-lg font-semibold text-zinc-950 dark:text-white mb-2">Delete Redirect</h3>
         <p id="deleteMessage" class="text-sm text-zinc-600 dark:text-zinc-400 mb-6"></p>
@@ -637,7 +658,7 @@ function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedS
     </dialog>
 
     <!-- Bulk Delete Dialog -->
-    <dialog id="bulkDeleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0">
+    <dialog id="bulkDeleteDialog" class="fixed inset-0 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md">
       <div class="p-6">
         <h3 class="text-lg font-semibold text-zinc-950 dark:text-white mb-2">Delete Multiple Redirects</h3>
         <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
