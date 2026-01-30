@@ -97,7 +97,7 @@ export function createRedirectAdminRoutes(): Hono {
 
   /**
    * DELETE /admin/redirects/:id
-   * Delete a redirect
+   * Delete a single redirect
    */
   admin.delete('/:id', async (c: any) => {
     try {
@@ -113,11 +113,75 @@ export function createRedirectAdminRoutes(): Hono {
       if (result.success) {
         return c.json({ success: true, message: 'Redirect deleted successfully' })
       } else {
-        return c.json({ success: false, error: result.error }, 400)
+        return c.json({ success: false, error: result.error }, 404)
       }
     } catch (error) {
       console.error('Error deleting redirect:', error)
       return c.json({ success: false, error: 'Failed to delete redirect' }, 500)
+    }
+  })
+
+  /**
+   * POST /admin/redirects/bulk-delete
+   * Delete multiple redirects in bulk
+   */
+  admin.post('/bulk-delete', async (c: any) => {
+    try {
+      const db = c.get('db') || c.env?.DB
+      if (!db) {
+        return c.json({ success: false, error: 'Database not available' }, 500)
+      }
+
+      // Parse request body to get IDs
+      const body = await c.req.json()
+      const ids: string[] = body.ids || []
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return c.json({ success: false, error: 'No redirect IDs provided' }, 400)
+      }
+
+      const service = new RedirectService(db)
+      let deleted = 0
+      let failed = 0
+      const errors: string[] = []
+
+      // Delete each redirect
+      for (const id of ids) {
+        try {
+          const result = await service.delete(id)
+          if (result.success) {
+            deleted++
+          } else {
+            failed++
+            errors.push(`ID ${id}: ${result.error || 'Unknown error'}`)
+          }
+        } catch (error) {
+          failed++
+          errors.push(`ID ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        }
+      }
+
+      // Return summary
+      if (failed === ids.length) {
+        // All failed
+        return c.json({
+          success: false,
+          error: `Failed to delete all ${failed} redirects`,
+          details: errors
+        }, 400)
+      } else {
+        // At least some succeeded
+        return c.json({
+          success: true,
+          deleted,
+          failed,
+          total: ids.length,
+          errors: failed > 0 ? errors : undefined
+        })
+      }
+    } catch (error) {
+      console.error('Error in bulk delete:', error)
+      return c.json({ success: false, error: 'Failed to process bulk delete request' }, 500)
     }
   })
 
