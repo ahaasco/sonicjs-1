@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 2 of 6 (Core Redirect Engine)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-01-30 — Completed 02-03-PLAN.md
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-01-30 — Completed 02-04-PLAN.md
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: 2.8 min
-- Total execution time: 0.2 hours
+- Total execution time: 0.3 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 2 | 3min | 1.5min |
-| 02 | 3 | 11min | 3.7min |
+| 02 | 4 | 14min | 3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (1min), 02-01 (3min), 02-02 (3min), 02-03 (5min)
-- Trend: Increasing complexity (from 1min to 5min)
+- Last 5 plans: 02-01 (3min), 02-02 (3min), 02-03 (5min), 02-04 (3min)
+- Trend: Stable complexity (averaging 3-4 min per plan)
 
 *Updated after each plan completion*
 
@@ -61,6 +61,10 @@ Recent decisions affecting current work:
 | 02-03 | Validate on create and update operations | Prevents circular redirects from being saved to database |
 | 02-03 | Use COALESCE in queries for new columns | Backward compatibility before migration runs |
 | 02-03 | lookupBySource uses LOWER() for case-insensitive matching | Handles case variations consistently |
+| 02-04 | Middleware uses RedirectService.lookupBySource() on cache miss | Single source of truth for database queries - no SQL duplication in middleware |
+| 02-04 | Cache invalidation called after successful CRUD operations | Clear all strategy ensures consistency after create/update/delete |
+| 02-04 | Hit recording is async fire-and-forget | Don't block redirect execution for analytics recording |
+| 02-04 | Middleware mounted early with app.use('*') | Ensures redirect interception before routing logic |
 
 ### Pending Todos
 
@@ -72,6 +76,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30T18:52:00Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-01-30T18:57:16Z
+Stopped at: Completed 02-04-PLAN.md (Phase 2 complete)
 Resume file: None
