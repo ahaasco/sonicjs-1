@@ -6,6 +6,9 @@ import { RedirectService } from './services/redirect'
 // Export middleware for direct mounting in app
 export { createRedirectMiddleware, invalidateRedirectCache, warmRedirectCache } from './middleware/redirect'
 
+// Export admin routes for mounting
+export { createRedirectAdminRoutes } from './routes/admin'
+
 export function createRedirectPlugin(): Plugin {
   const builder = PluginBuilder.create({
     name: manifest.id,
@@ -32,7 +35,7 @@ export function createRedirectPlugin(): Plugin {
   )
 
   // Add menu item
-  builder.addMenuItem('Redirects', '/admin/plugins/redirect-management/settings', {
+  builder.addMenuItem('Redirects', '/admin/redirects', {
     icon: 'arrow-right',
     order: 85,
     permissions: ['admin', 'redirect.manage']
