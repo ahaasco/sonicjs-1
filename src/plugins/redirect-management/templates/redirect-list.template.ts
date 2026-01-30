@@ -48,9 +48,12 @@ export function renderRedirectListPage(data: RedirectListPageData): HtmlEscapedS
       <!-- Filter Bar -->
       ${renderFilterBar(filters)}
 
+      <!-- Active Filter Chips -->
+      ${renderActiveFilterChips(filters)}
+
       <!-- Table Card -->
       <div class="rounded-xl bg-white dark:bg-zinc-900 shadow-sm ring-1 ring-zinc-950/5 dark:ring-white/10">
-        ${redirects.length > 0 ? renderTable(redirects) : renderEmptyState()}
+        ${redirects.length > 0 ? renderTable(redirects) : renderEmptyState(filters)}
       </div>
 
       <!-- Pagination -->
@@ -170,6 +173,108 @@ function renderFilterBar(filters: RedirectListPageData['filters']): HtmlEscapedS
  */
 function hasActiveFilters(filters: RedirectListPageData['filters']): boolean {
   return !!(filters.search || filters.statusCode || filters.matchType || filters.isActive)
+}
+
+/**
+ * Render active filter chips showing current filters
+ */
+function renderActiveFilterChips(filters: RedirectListPageData['filters']): HtmlEscapedString | Promise<HtmlEscapedString> {
+  if (!hasActiveFilters(filters)) {
+    return html``
+  }
+
+  const chips: string[] = []
+
+  // Search filter chip
+  if (filters.search) {
+    chips.push(`
+      <span class="inline-flex items-center gap-x-1 rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
+        Search: ${filters.search}
+        <button onclick="removeFilter('search')" class="group relative -mr-1 h-4 w-4 rounded-sm hover:bg-blue-600/20" type="button">
+          <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+          </svg>
+        </button>
+      </span>
+    `)
+  }
+
+  // Status Code filter chip
+  if (filters.statusCode) {
+    const statusLabels: Record<string, string> = {
+      '301': '301 Permanent',
+      '302': '302 Temporary',
+      '307': '307 Temp (Keep Method)',
+      '308': '308 Perm (Keep Method)',
+      '410': '410 Gone'
+    }
+    chips.push(`
+      <span class="inline-flex items-center gap-x-1 rounded-md bg-green-50 dark:bg-green-900/20 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-300">
+        Status: ${statusLabels[filters.statusCode] || filters.statusCode}
+        <button onclick="removeFilter('statusCode')" class="group relative -mr-1 h-4 w-4 rounded-sm hover:bg-green-600/20" type="button">
+          <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+          </svg>
+        </button>
+      </span>
+    `)
+  }
+
+  // Match Type filter chip
+  if (filters.matchType) {
+    const matchTypeLabels: Record<string, string> = {
+      '0': 'Exact',
+      '1': 'Partial',
+      '2': 'Regex'
+    }
+    chips.push(`
+      <span class="inline-flex items-center gap-x-1 rounded-md bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300">
+        Match: ${matchTypeLabels[filters.matchType] || filters.matchType}
+        <button onclick="removeFilter('matchType')" class="group relative -mr-1 h-4 w-4 rounded-sm hover:bg-purple-600/20" type="button">
+          <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+          </svg>
+        </button>
+      </span>
+    `)
+  }
+
+  // Active status filter chip
+  if (filters.isActive) {
+    const activeLabel = filters.isActive === 'true' ? 'Active Only' : 'Inactive Only'
+    chips.push(`
+      <span class="inline-flex items-center gap-x-1 rounded-md bg-amber-50 dark:bg-amber-900/20 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
+        Status: ${activeLabel}
+        <button onclick="removeFilter('isActive')" class="group relative -mr-1 h-4 w-4 rounded-sm hover:bg-amber-600/20" type="button">
+          <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+          </svg>
+        </button>
+      </span>
+    `)
+  }
+
+  return html`
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+      <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Active filters:</span>
+      ${chips.join('')}
+      <button
+        onclick="clearFilters()"
+        class="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+      >
+        Clear all
+      </button>
+    </div>
+
+    <script>
+      function removeFilter(name) {
+        const params = new URLSearchParams(window.location.search);
+        params.delete(name);
+        params.set('page', '1');
+        window.location.href = window.location.pathname + '?' + params.toString();
+      }
+    </script>
+  `
 }
 
 /**
@@ -382,7 +487,9 @@ function renderActiveIndicator(active: boolean): HtmlEscapedString | Promise<Htm
 /**
  * Render empty state when no redirects exist
  */
-function renderEmptyState(): HtmlEscapedString | Promise<HtmlEscapedString> {
+function renderEmptyState(filters: RedirectListPageData['filters']): HtmlEscapedString | Promise<HtmlEscapedString> {
+  const hasFilters = hasActiveFilters(filters)
+
   return html`
     <div class="text-center py-12">
       <svg class="mx-auto h-12 w-12 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -390,19 +497,33 @@ function renderEmptyState(): HtmlEscapedString | Promise<HtmlEscapedString> {
       </svg>
       <h3 class="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">No redirects</h3>
       <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        No redirects created yet. Click "New Redirect" to get started.
+        ${hasFilters
+          ? 'No redirects match your filters. Try adjusting your search criteria.'
+          : 'No redirects created yet. Click "New Redirect" to get started.'
+        }
       </p>
-      <div class="mt-6">
-        <a
-          href="/admin/redirects/new"
-          class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-        >
-          <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          New Redirect
-        </a>
-      </div>
+      ${hasFilters ? html`
+        <div class="mt-6">
+          <button
+            onclick="clearFilters()"
+            class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+          >
+            Clear Filters
+          </button>
+        </div>
+      ` : html`
+        <div class="mt-6">
+          <a
+            href="/admin/redirects/new"
+            class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+          >
+            <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Redirect
+          </a>
+        </div>
+      `}
     </div>
   `
 }
