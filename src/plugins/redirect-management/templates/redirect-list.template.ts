@@ -343,14 +343,34 @@ function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEsc
 
     <script>
       let sortDirection = {};
-      let currentSortColumn = null;
+      let originalOrder = [];
 
       function sortTable(column) {
         const tbody = document.getElementById('redirectTableBody');
         const rows = Array.from(tbody.querySelectorAll('tr'));
 
-        // Toggle sort direction
-        sortDirection[column] = sortDirection[column] === 'asc' ? 'desc' : 'asc';
+        // Save original order on first interaction
+        if (originalOrder.length === 0) {
+          originalOrder = rows.map(row => row.cloneNode(true));
+        }
+
+        // Cycle through 3 states: none → asc → desc → none
+        if (!sortDirection[column] || sortDirection[column] === 'desc') {
+          sortDirection[column] = 'asc';
+        } else if (sortDirection[column] === 'asc') {
+          sortDirection[column] = 'desc';
+        } else {
+          sortDirection[column] = null;
+        }
+
+        // Reset to original order if sort is null
+        if (sortDirection[column] === null) {
+          tbody.innerHTML = '';
+          originalOrder.forEach(row => tbody.appendChild(row.cloneNode(true)));
+          updateSortIcons(column, null);
+          return;
+        }
+
         const ascending = sortDirection[column] === 'asc';
 
         rows.sort((a, b) => {
@@ -375,8 +395,13 @@ function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEsc
           const icon = document.getElementById('sort-icon-' + col);
           if (icon) {
             if (col === column) {
-              icon.textContent = ascending ? '↑' : '↓';
-              icon.classList.add('text-indigo-600', 'dark:text-indigo-400');
+              if (ascending === null) {
+                icon.textContent = '↕';
+                icon.classList.remove('text-indigo-600', 'dark:text-indigo-400');
+              } else {
+                icon.textContent = ascending ? '↑' : '↓';
+                icon.classList.add('text-indigo-600', 'dark:text-indigo-400');
+              }
             } else {
               icon.textContent = '↕';
               icon.classList.remove('text-indigo-600', 'dark:text-indigo-400');
@@ -642,7 +667,7 @@ function renderPagination(pagination: RedirectListPageData['pagination'], filter
 function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedString> {
   return html`
     <!-- Single Delete Dialog -->
-    <dialog id="deleteDialog" class="fixed inset-0 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md">
+    <dialog id="deleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md backdrop:bg-black backdrop:bg-opacity-50">
       <div class="p-6">
         <h3 class="text-lg font-semibold text-zinc-950 dark:text-white mb-2">Delete Redirect</h3>
         <p id="deleteMessage" class="text-sm text-zinc-600 dark:text-zinc-400 mb-6"></p>
@@ -658,7 +683,7 @@ function getConfirmationDialogScript(): HtmlEscapedString | Promise<HtmlEscapedS
     </dialog>
 
     <!-- Bulk Delete Dialog -->
-    <dialog id="bulkDeleteDialog" class="fixed inset-0 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md">
+    <dialog id="bulkDeleteDialog" class="rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-zinc-950/5 dark:ring-white/10 p-0 max-w-md backdrop:bg-black backdrop:bg-opacity-50">
       <div class="p-6">
         <h3 class="text-lg font-semibold text-zinc-950 dark:text-white mb-2">Delete Multiple Redirects</h3>
         <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-6">
