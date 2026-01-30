@@ -183,11 +183,11 @@ function renderActiveFilterChips(filters: RedirectListPageData['filters']): Html
     return html``
   }
 
-  const chips: string[] = []
+  const chips: HtmlEscapedString[] = []
 
   // Search filter chip
   if (filters.search) {
-    chips.push(`
+    chips.push(html`
       <span class="inline-flex items-center gap-x-1 rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
         Search: ${filters.search}
         <button onclick="removeFilter('search')" class="group relative -mr-1 h-4 w-4 rounded-sm hover:bg-blue-600/20" type="button">
@@ -208,7 +208,7 @@ function renderActiveFilterChips(filters: RedirectListPageData['filters']): Html
       '308': '308 Perm (Keep Method)',
       '410': '410 Gone'
     }
-    chips.push(`
+    chips.push(html`
       <span class="inline-flex items-center gap-x-1 rounded-md bg-green-50 dark:bg-green-900/20 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-300">
         Status: ${statusLabels[filters.statusCode] || filters.statusCode}
         <button onclick="removeFilter('statusCode')" class="group relative -mr-1 h-4 w-4 rounded-sm hover:bg-green-600/20" type="button">
@@ -227,7 +227,7 @@ function renderActiveFilterChips(filters: RedirectListPageData['filters']): Html
       '1': 'Partial',
       '2': 'Regex'
     }
-    chips.push(`
+    chips.push(html`
       <span class="inline-flex items-center gap-x-1 rounded-md bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300">
         Match: ${matchTypeLabels[filters.matchType] || filters.matchType}
         <button onclick="removeFilter('matchType')" class="group relative -mr-1 h-4 w-4 rounded-sm hover:bg-purple-600/20" type="button">
@@ -242,7 +242,7 @@ function renderActiveFilterChips(filters: RedirectListPageData['filters']): Html
   // Active status filter chip
   if (filters.isActive) {
     const activeLabel = filters.isActive === 'true' ? 'Active Only' : 'Inactive Only'
-    chips.push(`
+    chips.push(html`
       <span class="inline-flex items-center gap-x-1 rounded-md bg-amber-50 dark:bg-amber-900/20 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
         Status: ${activeLabel}
         <button onclick="removeFilter('isActive')" class="group relative -mr-1 h-4 w-4 rounded-sm hover:bg-amber-600/20" type="button">
@@ -257,7 +257,7 @@ function renderActiveFilterChips(filters: RedirectListPageData['filters']): Html
   return html`
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Active filters:</span>
-      ${chips.join('')}
+      ${chips}
       <button
         onclick="clearFilters()"
         class="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
