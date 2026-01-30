@@ -124,13 +124,54 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (To be populated during roadmap creation) | | |
+| REDIR-01 | Phase 2 | Pending |
+| REDIR-02 | Phase 2 | Pending |
+| REDIR-03 | Phase 2 | Pending |
+| REDIR-04 | Phase 2 | Pending |
+| REDIR-05 | Phase 2 | Pending |
+| REDIR-06 | Phase 2 | Pending |
+| VALID-01 | Phase 2 | Pending |
+| VALID-02 | Phase 2 | Pending |
+| VALID-03 | Phase 2 | Pending |
+| VALID-04 | Phase 2 | Pending |
+| STATUS-01 | Phase 2 | Pending |
+| STATUS-02 | Phase 2 | Pending |
+| STATUS-03 | Phase 2 | Pending |
+| STATUS-04 | Phase 2 | Pending |
+| STATUS-05 | Phase 2 | Pending |
+| CSV-01 | Phase 4 | Pending |
+| CSV-02 | Phase 4 | Pending |
+| CSV-03 | Phase 4 | Pending |
+| CSV-04 | Phase 4 | Pending |
+| ANALYT-01 | Phase 6 | Pending |
+| ANALYT-02 | Phase 6 | Pending |
+| ANALYT-03 | Phase 6 | Pending |
+| API-01 | Phase 5 | Pending |
+| API-02 | Phase 5 | Pending |
+| API-03 | Phase 5 | Pending |
+| API-04 | Phase 5 | Pending |
+| API-05 | Phase 5 | Pending |
+| EXEC-01 | Phase 2 | Pending |
+| EXEC-02 | Phase 2 | Pending |
+| EXEC-03 | Phase 2 | Pending |
+| EXEC-04 | Phase 2 | Pending |
+| EXEC-05 | Phase 2 | Pending |
+| UI-01 | Phase 3 | Pending |
+| UI-02 | Phase 3 | Pending |
+| UI-03 | Phase 3 | Pending |
+| UI-04 | Phase 3 | Pending |
+| UI-05 | Phase 3 | Pending |
+| UI-06 | Phase 3 | Pending |
+| UI-07 | Phase 3 | Pending |
+| AUDIT-01 | Phase 6 | Pending |
+| AUDIT-02 | Phase 6 | Pending |
+| AUDIT-03 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 36 total
-- Mapped to phases: 0 (awaiting roadmap)
-- Unmapped: 36 ⚠️
+- Mapped to phases: 36 (100% coverage)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-30*
-*Last updated: 2026-01-30 after initial definition*
+*Last updated: 2026-01-30 after roadmap creation*
