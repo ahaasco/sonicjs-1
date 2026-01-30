@@ -1,6 +1,8 @@
 import manifest from '../manifest.json'
-import type { RedirectSettings } from '../types'
+import type { RedirectSettings, Redirect, CreateRedirectInput, UpdateRedirectInput, RedirectFilter, RedirectOperationResult, MatchType, StatusCode } from '../types'
 import type { D1Database } from '@cloudflare/workers-types'
+import { normalizeUrl } from '../utils/url-normalizer'
+import { validateRedirect, type ValidationResult } from '../utils/validator'
 
 export class RedirectService {
   constructor(private db: D1Database) {}
@@ -41,6 +43,413 @@ export class RedirectService {
   getDefaultSettings(): RedirectSettings {
     return {
       enabled: true
+    }
+  }
+
+  // CRUD Operations
+
+  /**
+   * Create a new redirect with validation
+   */
+  async create(input: CreateRedirectInput, userId: string): Promise<RedirectOperationResult> {
+    try {
+      // Generate unique ID
+      const id = crypto.randomUUID()
+
+      // Set defaults for optional fields
+      const matchType = input.matchType ?? 0 // MatchType.EXACT
+      const statusCode = input.statusCode ?? 301
+      const isActive = input.isActive ?? true
+      const includeQueryParams = input.includeQueryParams ?? false
+      const preserveQueryParams = input.preserveQueryParams ?? false
+
+      // Load existing redirects for circular detection
+      const existingMap = await this.getAllSourceDestinationMap()
+
+      // Validate redirect
+      const validation = validateRedirect(input.source, input.destination, existingMap)
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.error
+        }
+      }
+
+      // Normalize source URL for storage (lowercase, no trailing slash)
+      const normalizedSource = normalizeUrl(input.source)
+      const now = Date.now()
+
+      // Insert into database
+      // NOTE: Migration 033 adds include_query_params and preserve_query_params columns
+      // Using COALESCE for backward compatibility with existing rows
+      await this.db
+        .prepare(`
+          INSERT INTO redirects (
+            id, source, destination, match_type, status_code, is_active,
+            include_query_params, preserve_query_params,
+            created_by, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .bind(
+          id,
+          normalizedSource,
+          input.destination,
+          matchType,
+          statusCode,
+          isActive ? 1 : 0,
+          includeQueryParams ? 1 : 0,
+          preserveQueryParams ? 1 : 0,
+          userId,
+          now,
+          now
+        )
+        .run()
+
+      // Fetch the created redirect
+      const redirect = await this.getById(id)
+
+      return {
+        success: true,
+        redirect: redirect!,
+        warning: validation.warning
+      }
+    } catch (error) {
+      console.error('Error creating redirect:', error)
+      return {
+        success: false,
+        error: `Failed to create redirect: ${error instanceof Error ? error.message : String(error)}`
+      }
+    }
+  }
+
+  /**
+   * Get redirect by ID
+   */
+  async getById(id: string): Promise<Redirect | null> {
+    try {
+      const row = await this.db
+        .prepare(`
+          SELECT
+            id, source, destination, match_type, status_code, is_active,
+            COALESCE(include_query_params, 0) as include_query_params,
+            COALESCE(preserve_query_params, 0) as preserve_query_params,
+            created_by, created_at, updated_at
+          FROM redirects
+          WHERE id = ?
+        `)
+        .bind(id)
+        .first()
+
+      if (!row) {
+        return null
+      }
+
+      return this.mapRowToRedirect(row)
+    } catch (error) {
+      console.error('Error getting redirect by ID:', error)
+      return null
+    }
+  }
+
+  /**
+   * Update an existing redirect
+   */
+  async update(id: string, input: UpdateRedirectInput): Promise<RedirectOperationResult> {
+    try {
+      // Fetch existing redirect
+      const existing = await this.getById(id)
+      if (!existing) {
+        return {
+          success: false,
+          error: 'Redirect not found'
+        }
+      }
+
+      // If source or destination changed, validate
+      let validation: ValidationResult | undefined
+      if (input.source || input.destination) {
+        const newSource = input.source ?? existing.source
+        const newDestination = input.destination ?? existing.destination
+
+        // Build map excluding current redirect (so we don't detect self as circular)
+        const existingMap = await this.getAllSourceDestinationMap()
+        existingMap.delete(normalizeUrl(existing.source))
+
+        validation = validateRedirect(newSource, newDestination, existingMap)
+        if (!validation.isValid) {
+          return {
+            success: false,
+            error: validation.error
+          }
+        }
+      }
+
+      // Build update query dynamically based on provided fields
+      const updates: string[] = []
+      const bindings: any[] = []
+
+      if (input.source !== undefined) {
+        updates.push('source = ?')
+        bindings.push(normalizeUrl(input.source))
+      }
+      if (input.destination !== undefined) {
+        updates.push('destination = ?')
+        bindings.push(input.destination)
+      }
+      if (input.matchType !== undefined) {
+        updates.push('match_type = ?')
+        bindings.push(input.matchType)
+      }
+      if (input.statusCode !== undefined) {
+        updates.push('status_code = ?')
+        bindings.push(input.statusCode)
+      }
+      if (input.isActive !== undefined) {
+        updates.push('is_active = ?')
+        bindings.push(input.isActive ? 1 : 0)
+      }
+      if (input.includeQueryParams !== undefined) {
+        updates.push('include_query_params = ?')
+        bindings.push(input.includeQueryParams ? 1 : 0)
+      }
+      if (input.preserveQueryParams !== undefined) {
+        updates.push('preserve_query_params = ?')
+        bindings.push(input.preserveQueryParams ? 1 : 0)
+      }
+
+      // Always update updated_at
+      updates.push('updated_at = ?')
+      bindings.push(Date.now())
+
+      // Add ID to bindings
+      bindings.push(id)
+
+      if (updates.length === 1) {
+        // Only updated_at would change, nothing to do
+        return {
+          success: true,
+          redirect: existing
+        }
+      }
+
+      // Execute update
+      await this.db
+        .prepare(`UPDATE redirects SET ${updates.join(', ')} WHERE id = ?`)
+        .bind(...bindings)
+        .run()
+
+      // Fetch updated redirect
+      const updated = await this.getById(id)
+
+      return {
+        success: true,
+        redirect: updated!,
+        warning: validation?.warning
+      }
+    } catch (error) {
+      console.error('Error updating redirect:', error)
+      return {
+        success: false,
+        error: `Failed to update redirect: ${error instanceof Error ? error.message : String(error)}`
+      }
+    }
+  }
+
+  /**
+   * Delete a redirect
+   */
+  async delete(id: string): Promise<RedirectOperationResult> {
+    try {
+      const result = await this.db
+        .prepare(`DELETE FROM redirects WHERE id = ?`)
+        .bind(id)
+        .run()
+
+      if (result.meta.changes > 0) {
+        return { success: true }
+      } else {
+        return {
+          success: false,
+          error: 'Redirect not found'
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting redirect:', error)
+      return {
+        success: false,
+        error: `Failed to delete redirect: ${error instanceof Error ? error.message : String(error)}`
+      }
+    }
+  }
+
+  /**
+   * List redirects with optional filtering and pagination
+   */
+  async list(filter?: RedirectFilter): Promise<Redirect[]> {
+    try {
+      const conditions: string[] = []
+      const bindings: any[] = []
+
+      // Build WHERE clause from filters
+      if (filter?.isActive !== undefined) {
+        conditions.push('is_active = ?')
+        bindings.push(filter.isActive ? 1 : 0)
+      }
+      if (filter?.statusCode !== undefined) {
+        conditions.push('status_code = ?')
+        bindings.push(filter.statusCode)
+      }
+      if (filter?.matchType !== undefined) {
+        conditions.push('match_type = ?')
+        bindings.push(filter.matchType)
+      }
+      if (filter?.search) {
+        conditions.push('(source LIKE ? OR destination LIKE ?)')
+        const searchPattern = `%${filter.search}%`
+        bindings.push(searchPattern, searchPattern)
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+      // Build query with pagination
+      const limit = filter?.limit ?? 50
+      const offset = filter?.offset ?? 0
+
+      const query = `
+        SELECT
+          id, source, destination, match_type, status_code, is_active,
+          COALESCE(include_query_params, 0) as include_query_params,
+          COALESCE(preserve_query_params, 0) as preserve_query_params,
+          created_by, created_at, updated_at
+        FROM redirects
+        ${whereClause}
+        ORDER BY created_at DESC
+        LIMIT ? OFFSET ?
+      `
+
+      bindings.push(limit, offset)
+
+      const result = await this.db.prepare(query).bind(...bindings).all()
+
+      return result.results.map(row => this.mapRowToRedirect(row))
+    } catch (error) {
+      console.error('Error listing redirects:', error)
+      return []
+    }
+  }
+
+  /**
+   * Count redirects matching filter (for pagination)
+   */
+  async count(filter?: RedirectFilter): Promise<number> {
+    try {
+      const conditions: string[] = []
+      const bindings: any[] = []
+
+      // Build WHERE clause from filters (same as list())
+      if (filter?.isActive !== undefined) {
+        conditions.push('is_active = ?')
+        bindings.push(filter.isActive ? 1 : 0)
+      }
+      if (filter?.statusCode !== undefined) {
+        conditions.push('status_code = ?')
+        bindings.push(filter.statusCode)
+      }
+      if (filter?.matchType !== undefined) {
+        conditions.push('match_type = ?')
+        bindings.push(filter.matchType)
+      }
+      if (filter?.search) {
+        conditions.push('(source LIKE ? OR destination LIKE ?)')
+        const searchPattern = `%${filter.search}%`
+        bindings.push(searchPattern, searchPattern)
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+      const result = await this.db
+        .prepare(`SELECT COUNT(*) as count FROM redirects ${whereClause}`)
+        .bind(...bindings)
+        .first()
+
+      return (result?.count as number) ?? 0
+    } catch (error) {
+      console.error('Error counting redirects:', error)
+      return 0
+    }
+  }
+
+  /**
+   * Lookup redirect by source URL (used by middleware)
+   */
+  async lookupBySource(normalizedSource: string): Promise<Redirect | null> {
+    try {
+      const row = await this.db
+        .prepare(`
+          SELECT
+            id, source, destination, match_type, status_code, is_active,
+            COALESCE(include_query_params, 0) as include_query_params,
+            COALESCE(preserve_query_params, 0) as preserve_query_params,
+            created_by, created_at, updated_at
+          FROM redirects
+          WHERE LOWER(source) = ? AND is_active = 1
+          LIMIT 1
+        `)
+        .bind(normalizedSource.toLowerCase())
+        .first()
+
+      if (!row) {
+        return null
+      }
+
+      return this.mapRowToRedirect(row)
+    } catch (error) {
+      console.error('Error looking up redirect by source:', error)
+      return null
+    }
+  }
+
+  /**
+   * Get all source->destination mappings for circular detection
+   * @internal Helper method for validation
+   */
+  async getAllSourceDestinationMap(): Promise<Map<string, string>> {
+    try {
+      const result = await this.db
+        .prepare(`SELECT source, destination FROM redirects WHERE is_active = 1`)
+        .all()
+
+      const map = new Map<string, string>()
+      for (const row of result.results) {
+        const normalizedSource = normalizeUrl(row.source as string)
+        map.set(normalizedSource, row.destination as string)
+      }
+
+      return map
+    } catch (error) {
+      console.error('Error getting source-destination map:', error)
+      return new Map()
+    }
+  }
+
+  /**
+   * Map database row to Redirect type
+   * @internal Helper method for type conversion
+   */
+  private mapRowToRedirect(row: any): Redirect {
+    return {
+      id: row.id as string,
+      source: row.source as string,
+      destination: row.destination as string,
+      matchType: row.match_type as MatchType,
+      statusCode: row.status_code as StatusCode,
+      isActive: row.is_active === 1,
+      includeQueryParams: (row.include_query_params ?? 0) === 1,
+      preserveQueryParams: (row.preserve_query_params ?? 0) === 1,
+      createdBy: row.created_by as string,
+      createdAt: row.created_at as number,
+      updatedAt: row.updated_at as number
     }
   }
 
