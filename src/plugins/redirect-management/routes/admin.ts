@@ -144,7 +144,7 @@ export function createRedirectAdminRoutes(): Hono {
       const redirect = await service.getById(id)
 
       if (!redirect) {
-        return c.redirect('/admin/redirects')
+        return c.redirect('/admin/redirects', 303)
       }
 
       const html = renderRedirectFormPage({
@@ -208,8 +208,8 @@ export function createRedirectAdminRoutes(): Hono {
       console.log('[Redirect Admin] Service result:', JSON.stringify({ success: result.success, error: result.error, warning: result.warning }, null, 2))
 
       if (result.success) {
-        // Use standard HTTP redirect - causes full page reload but ensures clean state
-        return c.redirect('/admin/redirects')
+        // Use HTTP 303 See Other - forces browser to use GET when following redirect
+        return c.redirect('/admin/redirects', 303)
       } else {
         // Return error/warning fragments for HTMX to insert into #form-messages
         let html = ''
@@ -263,8 +263,8 @@ export function createRedirectAdminRoutes(): Hono {
       console.log('[Redirect Admin] Service result:', JSON.stringify({ success: result.success, error: result.error, warning: result.warning }, null, 2))
 
       if (result.success) {
-        // Use standard HTTP redirect - causes full page reload but ensures clean state
-        return c.redirect('/admin/redirects')
+        // Use HTTP 303 See Other - forces browser to use GET when following redirect
+        return c.redirect('/admin/redirects', 303)
       } else {
         // Return error/warning fragments for HTMX to insert into #form-messages
         let html = ''
