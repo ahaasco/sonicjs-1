@@ -58,17 +58,19 @@ Plans:
 **Goal**: Admins can create, edit, view, search, filter, and delete redirects via admin interface
 **Depends on**: Phase 2
 **Requirements**: UI-01, UI-02, UI-03, UI-04, UI-05, UI-06, UI-07
+**Plans**: 4 plans
 **Success Criteria** (what must be TRUE):
   1. Admin can click "Redirects" link in admin menu and see redirect management page
   2. Admin can create new redirect using form with all required fields (source, destination, match type, status code, active toggle)
   3. Admin can edit existing redirect and changes are saved and take effect
   4. Admin can search/filter redirect list by source URL, destination URL, status code, or active status
   5. Admin can delete redirect with confirmation modal preventing accidental deletion
-**Plans**: TBD
 
 Plans:
-- [ ] 03-01: TBD during planning
-- [ ] 03-02: TBD during planning
+- [ ] 03-01-PLAN.md — Admin redirect list page with route handlers and table template
+- [ ] 03-02-PLAN.md — Create and edit forms with validation and HTMX submission
+- [ ] 03-03-PLAN.md — Delete confirmation modals and bulk delete functionality
+- [ ] 03-04-PLAN.md — Search/filter bar with debounce and filter chips
 
 ### Phase 4: CSV Import/Export
 **Goal**: Admins can bulk import and export redirects via CSV for site migrations
@@ -122,7 +124,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Foundation & Plugin Structure | 2/2 | Complete | 2026-01-30 |
 | 2. Core Redirect Engine | 4/4 | Complete | 2026-01-30 |
-| 3. Admin UI | 0/0 | Not started | - |
+| 3. Admin UI | 0/4 | Planned | - |
 | 4. CSV Import/Export | 0/0 | Not started | - |
 | 5. API Endpoints | 0/0 | Not started | - |
 | 6. Analytics & Audit Trail | 0/0 | Not started | - |
