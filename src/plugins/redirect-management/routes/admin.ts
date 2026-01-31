@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { RedirectService } from '../services/redirect'
 import { renderRedirectListPage } from '../templates/redirect-list.template'
 import { renderRedirectFormPage } from '../templates/redirect-form.template'
+import { generateCSV, buildExportFilename } from '../services/csv.service'
 import type { RedirectFilter, MatchType, StatusCode, CreateRedirectInput, UpdateRedirectInput } from '../types'
 
 /**
@@ -105,6 +106,75 @@ export function createRedirectAdminRoutes(): Hono {
     } catch (error) {
       console.error('Error loading redirect list page:', error)
       return c.html('<h1>Error loading redirects</h1>', 500)
+    }
+  })
+
+  /**
+   * GET /admin/redirects/export
+   * Export redirects as CSV file, respecting current filters
+   */
+  admin.get('/export', async (c: any) => {
+    try {
+      const db = c.env?.DB || c.get('db')
+      if (!db) {
+        return c.text('Database not available', 500)
+      }
+
+      // Parse the same filter parameters as the list route
+      const statusCodeParam = c.req.query('statusCode')
+      const matchTypeParam = c.req.query('matchType')
+      const isActiveParam = c.req.query('isActive')
+      const search = c.req.query('search') || undefined
+
+      // Build filter object (same logic as list route)
+      const filter: RedirectFilter = {}
+
+      if (statusCodeParam && ['301', '302', '307', '308', '410'].includes(statusCodeParam)) {
+        filter.statusCode = parseInt(statusCodeParam) as StatusCode
+      }
+      if (matchTypeParam && ['0', '1', '2'].includes(matchTypeParam)) {
+        filter.matchType = parseInt(matchTypeParam) as MatchType
+      }
+      if (isActiveParam === 'true') {
+        filter.isActive = true
+      } else if (isActiveParam === 'false') {
+        filter.isActive = false
+      }
+      if (search) {
+        filter.search = search
+      }
+
+      // Remove pagination limits - export all matching redirects
+      // (but keep a reasonable safety limit)
+      filter.limit = 10000
+      filter.offset = 0
+
+      // Fetch redirects matching filters
+      const service = new RedirectService(db)
+      const redirects = await service.list(filter)
+
+      // Generate CSV
+      const csv = generateCSV(redirects)
+
+      // Build descriptive filename
+      const filename = buildExportFilename({
+        statusCode: statusCodeParam,
+        matchType: matchTypeParam,
+        isActive: isActiveParam,
+        search
+      })
+
+      // Return CSV with proper headers for download
+      return new Response(csv, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${filename}"`
+        }
+      })
+    } catch (error) {
+      console.error('Error exporting CSV:', error)
+      return c.text('Failed to export redirects', 500)
     }
   })
 
