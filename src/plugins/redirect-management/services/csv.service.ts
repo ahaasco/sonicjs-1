@@ -34,7 +34,7 @@ export function parseCSV(content: string): CSVParseResult {
       columns: true,
       skip_empty_lines: true,
       trim: true
-    })
+    }) as Array<Record<string, string>>
 
     // Validate and map each row
     for (let i = 0; i < records.length; i++) {
