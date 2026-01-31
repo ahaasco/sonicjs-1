@@ -156,11 +156,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXEC-03 | Phase 2 | Complete |
 | EXEC-04 | Phase 2 | Complete |
 | EXEC-05 | Phase 2 | Complete |
-| UI-01 | Phase 3 | Pending |
-| UI-02 | Phase 3 | Pending |
-| UI-03 | Phase 3 | Pending |
-| UI-04 | Phase 3 | Pending |
-| UI-05 | Phase 3 | Pending |
+| UI-01 | Phase 3 | Complete |
+| UI-02 | Phase 3 | Complete |
+| UI-03 | Phase 3 | Complete |
+| UI-04 | Phase 3 | Complete |
+| UI-05 | Phase 3 | Complete |
 | UI-06 | Phase 3 | Pending |
 | UI-07 | Phase 3 | Pending |
 | AUDIT-01 | Phase 6 | Pending |
