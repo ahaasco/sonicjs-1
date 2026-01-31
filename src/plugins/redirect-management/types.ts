@@ -192,3 +192,42 @@ export interface CSVParseResult {
   /** Parse errors with line number context */
   errors: CSVError[]
 }
+
+/**
+ * Duplicate handling strategy for CSV import
+ */
+export type DuplicateHandling = 'reject' | 'skip' | 'update'
+
+/**
+ * Result of batch CSV validation
+ */
+export interface CSVValidationResult {
+  /** Whether validation succeeded (no errors) */
+  isValid: boolean
+  /** Validated rows ready for database insert */
+  validRows: ValidatedRedirectRow[]
+  /** Validation errors with line number context */
+  errors: CSVError[]
+  /** Count of rows skipped due to duplicate handling */
+  skipped: number
+}
+
+/**
+ * Validated redirect row ready for database insert
+ */
+export interface ValidatedRedirectRow {
+  /** Normalized source URL */
+  source: string
+  /** Destination URL */
+  destination: string
+  /** Match type (numeric) */
+  matchType: MatchType
+  /** HTTP status code */
+  statusCode: StatusCode
+  /** Whether redirect is active */
+  isActive: boolean
+  /** Whether to include query params in matching */
+  includeQueryParams: boolean
+  /** Whether to preserve query params when redirecting */
+  preserveQueryParams: boolean
+}

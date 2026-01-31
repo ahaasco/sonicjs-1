@@ -6,7 +6,9 @@
 
 import { parse } from 'csv-parse/browser/esm/sync'
 import { sanitizeCSVField } from '../utils/csv-sanitizer.js'
-import type { Redirect, CSVParseResult, CSVError, ParsedRedirectRow, MatchType } from '../types.js'
+import { validateUrl, detectCircularRedirect } from '../utils/validator.js'
+import { normalizeUrl } from '../utils/url-normalizer.js'
+import type { Redirect, CSVParseResult, CSVError, ParsedRedirectRow, MatchType, CSVValidationResult, ValidatedRedirectRow, DuplicateHandling, StatusCode } from '../types.js'
 
 /**
  * Parse CSV content into redirect rows
@@ -208,4 +210,236 @@ export function buildExportFilename(filters: {
   }
 
   return `${parts.join('-')}.csv`
+}
+
+/**
+ * Validate entire CSV batch before import (all-or-nothing)
+ *
+ * @param rows - Parsed CSV rows from parseCSV
+ * @param existingRedirects - Map of source->destination for existing redirects
+ * @param duplicateHandling - How to handle duplicates ('reject', 'skip', 'update')
+ * @returns Validation result with valid rows or errors
+ *
+ * @example
+ * const result = await validateCSVBatch(rows, existingMap, 'reject')
+ * if (result.isValid) {
+ *   // Import result.validRows
+ * } else {
+ *   // Show result.errors to user
+ * }
+ */
+export async function validateCSVBatch(
+  rows: ParsedRedirectRow[],
+  existingRedirects: Map<string, string>,
+  duplicateHandling: DuplicateHandling
+): Promise<CSVValidationResult> {
+  const errors: CSVError[] = []
+  const validRows: ValidatedRedirectRow[] = []
+  let skipped = 0
+
+  // Build combined map: existing + import file (for circular detection)
+  const combinedMap = new Map(existingRedirects)
+
+  // Track sources seen in this import file (for intra-file duplicate detection)
+  const seenInFile = new Set<string>()
+
+  for (let i = 0; i < rows.length; i++) {
+    const lineNumber = i + 2  // +1 for 0-index, +1 for header row
+    const row = rows[i]
+
+    // Required field validation
+    if (!row.source_url || !row.destination_url) {
+      errors.push({
+        line: lineNumber,
+        error: 'Missing required fields: source_url and destination_url are required'
+      })
+      continue
+    }
+
+    // URL format validation
+    const sourceValidation = validateUrl(row.source_url)
+    if (!sourceValidation.isValid) {
+      errors.push({
+        line: lineNumber,
+        field: 'source_url',
+        value: row.source_url,
+        error: sourceValidation.error!
+      })
+      continue
+    }
+
+    const destValidation = validateUrl(row.destination_url)
+    if (!destValidation.isValid) {
+      errors.push({
+        line: lineNumber,
+        field: 'destination_url',
+        value: row.destination_url,
+        error: destValidation.error!
+      })
+      continue
+    }
+
+    // Parse and validate status code
+    const statusCode = parseInt(row.status_code || '301')
+    if (![301, 302, 307, 308, 410].includes(statusCode)) {
+      errors.push({
+        line: lineNumber,
+        field: 'status_code',
+        value: row.status_code,
+        error: 'Invalid status code. Must be 301, 302, 307, 308, or 410'
+      })
+      continue
+    }
+
+    // Parse match type (accept both labels and numbers)
+    const matchType = labelToMatchType(row.match_type || 'exact')
+    if (matchType === undefined) {
+      errors.push({
+        line: lineNumber,
+        field: 'match_type',
+        value: row.match_type,
+        error: 'Invalid match type. Must be exact, partial, regex (or 0, 1, 2)'
+      })
+      continue
+    }
+
+    // Normalize source for duplicate detection
+    const normalizedSource = normalizeUrl(row.source_url)
+
+    // Check for intra-file duplicates
+    if (seenInFile.has(normalizedSource)) {
+      if (duplicateHandling === 'reject') {
+        errors.push({
+          line: lineNumber,
+          field: 'source_url',
+          value: row.source_url,
+          error: 'Duplicate source URL found earlier in this file'
+        })
+        continue
+      } else {
+        skipped++
+        continue  // skip or update: skip the duplicate row in file
+      }
+    }
+
+    // Check for database duplicates
+    if (existingRedirects.has(normalizedSource)) {
+      if (duplicateHandling === 'reject') {
+        errors.push({
+          line: lineNumber,
+          field: 'source_url',
+          value: row.source_url,
+          error: 'Source URL already exists in database'
+        })
+        continue
+      } else if (duplicateHandling === 'skip') {
+        skipped++
+        continue
+      }
+      // 'update' mode: will overwrite, continue processing
+    }
+
+    // Add to tracking sets
+    seenInFile.add(normalizedSource)
+    combinedMap.set(normalizedSource, row.destination_url)
+
+    // Create validated row
+    validRows.push({
+      source: normalizedSource,
+      destination: row.destination_url,
+      matchType: matchType as MatchType,
+      statusCode: statusCode as StatusCode,
+      isActive: row.active?.toLowerCase() !== 'false',
+      includeQueryParams: row.include_query_params?.toLowerCase() === 'true',
+      preserveQueryParams: row.preserve_query_params?.toLowerCase() === 'true'
+    })
+  }
+
+  // Second pass: circular redirect detection across entire batch
+  for (let i = 0; i < validRows.length; i++) {
+    const row = validRows[i]
+    const lineNumber = findLineNumberForSource(rows, row.source)
+
+    const circularCheck = detectCircularRedirect(
+      row.source,
+      row.destination,
+      combinedMap
+    )
+
+    if (!circularCheck.isValid) {
+      errors.push({
+        line: lineNumber,
+        field: 'destination_url',
+        value: row.destination,
+        error: circularCheck.error!
+      })
+    }
+  }
+
+  // If any errors, return empty validRows (all-or-nothing)
+  return {
+    isValid: errors.length === 0,
+    validRows: errors.length === 0 ? validRows : [],
+    errors,
+    skipped
+  }
+}
+
+/**
+ * Helper to find line number for a source URL
+ */
+function findLineNumberForSource(rows: ParsedRedirectRow[], normalizedSource: string): number {
+  for (let i = 0; i < rows.length; i++) {
+    if (normalizeUrl(rows[i].source_url) === normalizedSource) {
+      return i + 2
+    }
+  }
+  return 0
+}
+
+/**
+ * Generate error CSV with line numbers and error messages
+ *
+ * @param rows - Original parsed CSV rows
+ * @param errors - Validation errors to include
+ * @returns CSV content string with error information
+ *
+ * @example
+ * const errorCSV = generateErrorCSV(rows, validationResult.errors)
+ * // Download as "import-errors.csv"
+ */
+export function generateErrorCSV(rows: ParsedRedirectRow[], errors: CSVError[]): string {
+  // Map errors by line number for quick lookup
+  const errorMap = new Map<number, string[]>()
+  for (const err of errors) {
+    const existing = errorMap.get(err.line) || []
+    existing.push(err.error)
+    errorMap.set(err.line, existing)
+  }
+
+  // Headers: add line_number and error columns at the start
+  const headers = ['line_number', 'error', 'source_url', 'destination_url', 'match_type', 'status_code', 'active']
+
+  const csvRows: string[] = [headers.join(',')]
+
+  // Only include rows that have errors
+  for (let i = 0; i < rows.length; i++) {
+    const lineNumber = i + 2
+    const rowErrors = errorMap.get(lineNumber)
+
+    if (rowErrors) {
+      const row = rows[i]
+      csvRows.push([
+        lineNumber.toString(),
+        sanitizeCSVField(rowErrors.join('; ')),
+        sanitizeCSVField(row.source_url),
+        sanitizeCSVField(row.destination_url),
+        sanitizeCSVField(row.match_type),
+        sanitizeCSVField(row.status_code),
+        sanitizeCSVField(row.active)
+      ].join(','))
+    }
+  }
+
+  return csvRows.join('\n')
 }
