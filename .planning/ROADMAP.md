@@ -76,7 +76,7 @@ Plans:
 **Goal**: Admins can bulk import and export redirects via CSV for site migrations
 **Depends on**: Phase 3
 **Requirements**: CSV-01, CSV-02, CSV-03, CSV-04
-**Plans**: 4 plans
+**Plans**: 5 plans
 **Success Criteria** (what must be TRUE):
   1. Admin can click "Export CSV" button and download file containing all redirects
   2. Admin can upload CSV file with bulk redirects and see validation feedback
@@ -84,10 +84,11 @@ Plans:
   4. System imports valid redirects in batch and they execute immediately after import
 
 Plans:
-- [ ] 04-01-PLAN.md — CSV service foundation (parsing, generation, sanitization)
-- [ ] 04-02-PLAN.md — Export functionality with filter-aware downloads
-- [ ] 04-03-PLAN.md — Import functionality with all-or-nothing validation
-- [ ] 04-04-PLAN.md — UI integration (buttons, import form, progress indicator)
+- [x] 04-01-PLAN.md — CSV service foundation (parsing, generation, sanitization)
+- [x] 04-02-PLAN.md — Export functionality with filter-aware downloads
+- [x] 04-03-PLAN.md — Import functionality with all-or-nothing validation
+- [x] 04-04-PLAN.md — UI integration (buttons, import form, progress indicator)
+- [ ] 04-05-PLAN.md — Fix TypeScript type safety in CSV parsing (gap closure)
 
 ### Phase 5: API Endpoints
 **Goal**: Other plugins can programmatically create, read, update, delete, and list redirects via API
@@ -128,6 +129,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Foundation & Plugin Structure | 2/2 | Complete | 2026-01-30 |
 | 2. Core Redirect Engine | 4/4 | Complete | 2026-01-30 |
 | 3. Admin UI | 4/4 | Complete | 2026-01-30 |
-| 4. CSV Import/Export | 0/4 | Ready | - |
+| 4. CSV Import/Export | 4/5 | Gap Closure | - |
 | 5. API Endpoints | 0/0 | Not started | - |
 | 6. Analytics & Audit Trail | 0/0 | Not started | - |
