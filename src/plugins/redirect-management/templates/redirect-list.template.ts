@@ -18,16 +18,24 @@ export interface RedirectListPageData {
     isActive?: string
   }
   user: any
+  successMessage?: string
 }
 
 /**
  * Render the redirect list page with table, filters, and pagination
  */
 export function renderRedirectListPage(data: RedirectListPageData): HtmlEscapedString | Promise<HtmlEscapedString> {
-  const { redirects, pagination, filters } = data
+  const { redirects, pagination, filters, successMessage } = data
 
   const content = html`
     <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
+      <!-- Success Message -->
+      ${successMessage ? html`
+        <div class="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-400 p-4 mb-6">
+          <p class="text-sm">${successMessage}</p>
+        </div>
+      ` : ''}
+
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
@@ -36,7 +44,27 @@ export function renderRedirectListPage(data: RedirectListPageData): HtmlEscapedS
             Manage URL redirects and monitor redirect activity
           </p>
         </div>
-        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div class="mt-4 sm:mt-0 sm:ml-16 flex items-center gap-3">
+          <!-- Export CSV Button -->
+          <a href="/admin/redirects/export${buildQueryString(filters)}"
+             class="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            Export CSV (${pagination.total})
+          </a>
+
+          <!-- Import CSV Button -->
+          <button type="button"
+                  onclick="document.getElementById('import-form').classList.toggle('hidden')"
+                  class="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-700 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+            Import CSV
+          </button>
+
+          <!-- New Redirect Button -->
           <a href="/admin/redirects/new" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 shadow-sm">
             <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -44,6 +72,80 @@ export function renderRedirectListPage(data: RedirectListPageData): HtmlEscapedS
             New Redirect
           </a>
         </div>
+      </div>
+
+      <!-- Import Form (hidden by default) -->
+      <div id="import-form" class="hidden mb-6 p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
+        <form hx-post="/admin/redirects/import"
+              hx-encoding="multipart/form-data"
+              hx-target="#import-result"
+              hx-indicator="#import-progress"
+              class="space-y-4">
+
+          <div>
+            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+              Select CSV File
+            </label>
+            <input type="file"
+                   name="csv_file"
+                   accept=".csv"
+                   required
+                   class="block w-full text-sm text-zinc-500 dark:text-zinc-400
+                          file:mr-4 file:py-2 file:px-4
+                          file:rounded-lg file:border-0
+                          file:text-sm file:font-medium
+                          file:bg-blue-50 file:text-blue-700
+                          dark:file:bg-blue-900/20 dark:file:text-blue-400
+                          hover:file:bg-blue-100 dark:hover:file:bg-blue-900/30">
+            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Maximum 10MB, up to 10,000 rows
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+              Duplicate Handling
+            </label>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2">
+                <input type="radio" name="duplicate_handling" value="reject" checked
+                       class="text-blue-600 focus:ring-blue-500">
+                <span class="text-sm text-zinc-700 dark:text-zinc-300">
+                  Reject file if duplicates found
+                </span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="radio" name="duplicate_handling" value="skip"
+                       class="text-blue-600 focus:ring-blue-500">
+                <span class="text-sm text-zinc-700 dark:text-zinc-300">
+                  Skip duplicate rows (import new only)
+                </span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="radio" name="duplicate_handling" value="update"
+                       class="text-blue-600 focus:ring-blue-500">
+                <span class="text-sm text-zinc-700 dark:text-zinc-300">
+                  Update existing redirects with CSV values
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button type="submit"
+                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+              Upload and Import
+            </button>
+            <div id="import-progress" class="htmx-indicator">
+              <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <div id="import-result"></div>
+        </form>
       </div>
 
       <!-- Filter Bar -->
@@ -174,6 +276,19 @@ function renderFilterBar(filters: RedirectListPageData['filters']): HtmlEscapedS
  */
 function hasActiveFilters(filters: RedirectListPageData['filters']): boolean {
   return !!(filters.search || filters.statusCode || filters.matchType || filters.isActive)
+}
+
+/**
+ * Build query string from filters for export URL
+ */
+function buildQueryString(filters: RedirectListPageData['filters']): string {
+  const params = new URLSearchParams()
+  if (filters.search) params.set('search', filters.search)
+  if (filters.statusCode) params.set('statusCode', filters.statusCode)
+  if (filters.matchType) params.set('matchType', filters.matchType)
+  if (filters.isActive) params.set('isActive', filters.isActive)
+  const str = params.toString()
+  return str ? `?${str}` : ''
 }
 
 /**

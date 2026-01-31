@@ -42,6 +42,7 @@ export function createRedirectAdminRoutes(): Hono {
       const statusCodeParam = c.req.query('statusCode')
       const matchTypeParam = c.req.query('matchType')
       const isActiveParam = c.req.query('isActive')
+      const successMessage = c.req.query('success') || undefined
 
       // Parse status code filter
       let statusCode: StatusCode | undefined
@@ -99,7 +100,8 @@ export function createRedirectAdminRoutes(): Hono {
           matchType: matchTypeParam,
           isActive: isActiveParam
         },
-        user: c.get('user')
+        user: c.get('user'),
+        successMessage
       })
 
       return c.html(html)
@@ -281,8 +283,13 @@ export function createRedirectAdminRoutes(): Hono {
         message += ` (${validation.skipped} duplicate${validation.skipped !== 1 ? 's' : ''} skipped)`
       }
 
-      // Return success (redirect to list with message via query param)
-      return c.redirect(`/admin/redirects?success=${encodeURIComponent(message)}`, 303)
+      // Return success with HX-Redirect header for HTMX compatibility
+      return new Response(null, {
+        status: 200,
+        headers: {
+          'HX-Redirect': `/admin/redirects?success=${encodeURIComponent(message)}`
+        }
+      })
 
     } catch (error) {
       console.error('Error importing CSV:', error)
