@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Plugin Structure** - Plugin scaffold, collection schema, database migrations
 - [x] **Phase 2: Core Redirect Engine** - Redirect execution, validation, middleware, caching
-- [ ] **Phase 3: Admin UI** - Forms, list views, search, filters, delete confirmations
+- [x] **Phase 3: Admin UI** - Forms, list views, search, filters, delete confirmations
 - [ ] **Phase 4: CSV Import/Export** - Bulk operations for site migrations
 - [ ] **Phase 5: API Endpoints** - Programmatic redirect management for other plugins
 - [ ] **Phase 6: Analytics & Audit Trail** - Hit tracking and user audit information
@@ -67,24 +67,27 @@ Plans:
   5. Admin can delete redirect with confirmation modal preventing accidental deletion
 
 Plans:
-- [ ] 03-01-PLAN.md — Admin redirect list page with route handlers and table template
-- [ ] 03-02-PLAN.md — Create and edit forms with validation and HTMX submission
-- [ ] 03-03-PLAN.md — Delete confirmation modals and bulk delete functionality
-- [ ] 03-04-PLAN.md — Search/filter bar with debounce and filter chips
+- [x] 03-01-PLAN.md — Admin redirect list page with route handlers and table template
+- [x] 03-02-PLAN.md — Create and edit forms with validation and HTMX submission
+- [x] 03-03-PLAN.md — Delete confirmation modals and bulk delete functionality
+- [x] 03-04-PLAN.md — Search/filter bar with debounce and filter chips
 
 ### Phase 4: CSV Import/Export
 **Goal**: Admins can bulk import and export redirects via CSV for site migrations
-**Depends on**: Phase 2
+**Depends on**: Phase 3
 **Requirements**: CSV-01, CSV-02, CSV-03, CSV-04
+**Plans**: 4 plans
 **Success Criteria** (what must be TRUE):
   1. Admin can click "Export CSV" button and download file containing all redirects
   2. Admin can upload CSV file with bulk redirects and see validation feedback
   3. System validates CSV format and shows actionable error messages with line numbers when validation fails
   4. System imports valid redirects in batch and they execute immediately after import
-**Plans**: TBD
 
 Plans:
-- [ ] 04-01: TBD during planning
+- [ ] 04-01-PLAN.md — CSV service foundation (parsing, generation, sanitization)
+- [ ] 04-02-PLAN.md — Export functionality with filter-aware downloads
+- [ ] 04-03-PLAN.md — Import functionality with all-or-nothing validation
+- [ ] 04-04-PLAN.md — UI integration (buttons, import form, progress indicator)
 
 ### Phase 5: API Endpoints
 **Goal**: Other plugins can programmatically create, read, update, delete, and list redirects via API
@@ -125,6 +128,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Foundation & Plugin Structure | 2/2 | Complete | 2026-01-30 |
 | 2. Core Redirect Engine | 4/4 | Complete | 2026-01-30 |
 | 3. Admin UI | 4/4 | Complete | 2026-01-30 |
-| 4. CSV Import/Export | 0/0 | Not started | - |
+| 4. CSV Import/Export | 0/4 | Ready | - |
 | 5. API Endpoints | 0/0 | Not started | - |
 | 6. Analytics & Audit Trail | 0/0 | Not started | - |
