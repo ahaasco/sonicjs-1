@@ -163,3 +163,49 @@ export function labelToMatchType(label: string): MatchType | undefined {
       return undefined
   }
 }
+
+/**
+ * Build descriptive filename based on active filters
+ *
+ * @param filters - Active filter parameters
+ * @returns Descriptive filename for CSV export
+ *
+ * @example
+ * buildExportFilename({}) // "redirects.csv"
+ * buildExportFilename({ statusCode: '301' }) // "redirects-301.csv"
+ * buildExportFilename({ statusCode: '301', isActive: 'true' }) // "redirects-301-active.csv"
+ * buildExportFilename({ matchType: '1' }) // "redirects-partial-match.csv"
+ */
+export function buildExportFilename(filters: {
+  statusCode?: string
+  matchType?: string
+  isActive?: string
+  search?: string
+}): string {
+  const parts = ['redirects']
+
+  if (filters.statusCode) {
+    parts.push(filters.statusCode)
+  }
+
+  if (filters.matchType !== undefined) {
+    const labels = { '0': 'exact', '1': 'partial', '2': 'regex' }
+    parts.push(`${labels[filters.matchType as keyof typeof labels] || filters.matchType}-match`)
+  }
+
+  if (filters.isActive === 'true') {
+    parts.push('active')
+  } else if (filters.isActive === 'false') {
+    parts.push('inactive')
+  }
+
+  if (filters.search) {
+    // Sanitize search term for filename (remove special chars)
+    const sanitized = filters.search.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 20)
+    if (sanitized) {
+      parts.push(`search-${sanitized}`)
+    }
+  }
+
+  return `${parts.join('-')}.csv`
+}
