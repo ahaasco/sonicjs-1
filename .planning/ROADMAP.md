@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Core Redirect Engine** - Redirect execution, validation, middleware, caching
 - [x] **Phase 3: Admin UI** - Forms, list views, search, filters, delete confirmations
 - [x] **Phase 4: CSV Import/Export** - Bulk operations for site migrations
-- [ ] **Phase 5: API Endpoints** - Programmatic redirect management for other plugins
+- [x] **Phase 5: API Endpoints** - Programmatic redirect management for other plugins
 - [ ] **Phase 6: Analytics & Audit Trail** - Hit tracking and user audit information
 
 ## Phase Details
@@ -103,7 +103,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01-PLAN.md — REST API routes with CRUD operations and optional Bearer auth
+- [x] 05-01-PLAN.md — REST API routes with CRUD operations and optional Bearer auth
 
 ### Phase 6: Analytics & Audit Trail
 **Goal**: Admins can view hit counts for redirects and see who last updated each redirect
@@ -130,5 +130,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Core Redirect Engine | 4/4 | Complete | 2026-01-30 |
 | 3. Admin UI | 4/4 | Complete | 2026-01-30 |
 | 4. CSV Import/Export | 5/5 | Complete | 2026-01-30 |
-| 5. API Endpoints | 0/1 | In Progress | - |
+| 5. API Endpoints | 1/1 | Complete | 2026-01-30 |
 | 6. Analytics & Audit Trail | 0/0 | Not started | - |
