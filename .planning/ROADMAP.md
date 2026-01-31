@@ -100,10 +100,10 @@ Plans:
   3. Plugin can PUT to API endpoint to update redirect
   4. Plugin can DELETE redirect via API
   5. Plugin can list all redirects with filtering (by status, active state, etc.)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: TBD during planning
+- [ ] 05-01-PLAN.md — REST API routes with CRUD operations and optional Bearer auth
 
 ### Phase 6: Analytics & Audit Trail
 **Goal**: Admins can view hit counts for redirects and see who last updated each redirect
@@ -130,5 +130,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Core Redirect Engine | 4/4 | Complete | 2026-01-30 |
 | 3. Admin UI | 4/4 | Complete | 2026-01-30 |
 | 4. CSV Import/Export | 5/5 | Complete | 2026-01-30 |
-| 5. API Endpoints | 0/0 | Not started | - |
+| 5. API Endpoints | 0/1 | In Progress | - |
 | 6. Analytics & Audit Trail | 0/0 | Not started | - |
