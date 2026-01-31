@@ -1,5 +1,5 @@
 import manifest from '../manifest.json'
-import type { RedirectSettings, Redirect, CreateRedirectInput, UpdateRedirectInput, RedirectFilter, RedirectOperationResult, MatchType, StatusCode } from '../types'
+import type { RedirectSettings, Redirect, CreateRedirectInput, UpdateRedirectInput, RedirectFilter, RedirectOperationResult, MatchType, StatusCode, ValidatedRedirectRow } from '../types'
 import type { D1Database } from '@cloudflare/workers-types'
 import { normalizeUrl } from '../utils/url-normalizer'
 import { validateRedirect, type ValidationResult } from '../utils/validator'
@@ -130,6 +130,56 @@ export class RedirectService {
         warning: undefined
       }
     }
+  }
+
+  /**
+   * Batch create redirects (for CSV import)
+   * Uses D1 batch API for performance
+   */
+  async batchCreate(rows: ValidatedRedirectRow[], userId: string): Promise<number> {
+    const now = Date.now()
+
+    // D1 has 100 parameter limit per statement
+    // With 11 columns, max ~9 rows per INSERT
+    const BATCH_SIZE = 9
+    const statements = []
+
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = rows.slice(i, i + BATCH_SIZE)
+
+      const placeholders = batch.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')
+      const values = batch.flatMap(r => [
+        crypto.randomUUID(),
+        r.source,
+        r.destination,
+        r.matchType,
+        r.statusCode,
+        r.isActive ? 1 : 0,
+        r.includeQueryParams ? 1 : 0,
+        r.preserveQueryParams ? 1 : 0,
+        userId,
+        now,
+        now
+      ])
+
+      statements.push(
+        this.db.prepare(`
+          INSERT INTO redirects (
+            id, source, destination, match_type, status_code, is_active,
+            include_query_params, preserve_query_params,
+            created_by, created_at, updated_at
+          ) VALUES ${placeholders}
+        `).bind(...values)
+      )
+    }
+
+    // Execute all INSERTs in single batch (transaction)
+    await this.db.batch(statements)
+
+    // Invalidate cache
+    invalidateRedirectCache()
+
+    return rows.length
   }
 
   /**

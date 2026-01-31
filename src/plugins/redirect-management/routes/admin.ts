@@ -2,8 +2,8 @@ import { Hono } from 'hono'
 import { RedirectService } from '../services/redirect'
 import { renderRedirectListPage } from '../templates/redirect-list.template'
 import { renderRedirectFormPage } from '../templates/redirect-form.template'
-import { generateCSV, buildExportFilename } from '../services/csv.service'
-import type { RedirectFilter, MatchType, StatusCode, CreateRedirectInput, UpdateRedirectInput } from '../types'
+import { generateCSV, buildExportFilename, parseCSV, validateCSVBatch, generateErrorCSV } from '../services/csv.service'
+import type { RedirectFilter, MatchType, StatusCode, CreateRedirectInput, UpdateRedirectInput, DuplicateHandling, ParsedRedirectRow } from '../types'
 
 /**
  * Render an alert message HTML fragment for HTMX
@@ -175,6 +175,123 @@ export function createRedirectAdminRoutes(): Hono {
     } catch (error) {
       console.error('Error exporting CSV:', error)
       return c.text('Failed to export redirects', 500)
+    }
+  })
+
+  /**
+   * POST /admin/redirects/import
+   * Import redirects from CSV file
+   */
+  admin.post('/import', async (c: any) => {
+    try {
+      const db = c.env?.DB || c.get('db')
+      if (!db) {
+        return c.html(renderAlertFragment('error', 'Database not available'), 500)
+      }
+
+      // Parse multipart form data
+      const body = await c.req.parseBody()
+      const file = body.csv_file as File
+      const duplicateHandling = (body.duplicate_handling || 'reject') as DuplicateHandling
+
+      // Validate file exists
+      if (!file || file.size === 0) {
+        return c.html(renderAlertFragment('error', 'No file uploaded'), 400)
+      }
+
+      // Validate file size (10MB limit)
+      const MAX_FILE_SIZE = 10 * 1024 * 1024
+      if (file.size > MAX_FILE_SIZE) {
+        return c.html(
+          renderAlertFragment('error',
+            `File too large. Maximum size is 10MB, got ${(file.size / 1024 / 1024).toFixed(1)}MB`
+          ),
+          400
+        )
+      }
+
+      // Parse CSV content
+      const content = await file.text()
+      const parseResult = parseCSV(content)
+
+      if (!parseResult.isValid) {
+        // Parse errors (malformed CSV)
+        const errorList = parseResult.errors.map(e => `Line ${e.line}: ${e.error}`).join('; ')
+        return c.html(
+          renderAlertFragment('error', `CSV parsing failed: ${errorList}`),
+          400
+        )
+      }
+
+      // Validate row count (10,000 limit)
+      const MAX_ROWS = 10000
+      if (parseResult.rows.length > MAX_ROWS) {
+        return c.html(
+          renderAlertFragment('error',
+            `Too many rows. Maximum is ${MAX_ROWS}, got ${parseResult.rows.length}`
+          ),
+          400
+        )
+      }
+
+      if (parseResult.rows.length === 0) {
+        return c.html(
+          renderAlertFragment('error', 'CSV file is empty (no data rows found)'),
+          400
+        )
+      }
+
+      // Get existing redirects for validation
+      const service = new RedirectService(db)
+      const existingMap = await service.getAllSourceDestinationMap()
+
+      // Validate all rows
+      const validation = await validateCSVBatch(
+        parseResult.rows as ParsedRedirectRow[],
+        existingMap,
+        duplicateHandling
+      )
+
+      if (!validation.isValid) {
+        // Return error CSV as download
+        const errorCSV = generateErrorCSV(parseResult.rows as ParsedRedirectRow[], validation.errors)
+
+        return new Response(errorCSV, {
+          status: 400,
+          headers: {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="import-errors.csv"'
+          }
+        })
+      }
+
+      // All valid - batch insert
+      const userId = c.get('user')?.id
+      let actualUserId = userId
+      if (!actualUserId) {
+        const adminUser = await db.prepare('SELECT id FROM users WHERE role = ? LIMIT 1').bind('admin').first()
+        actualUserId = adminUser?.id as string || 'system'
+      }
+
+      const imported = await service.batchCreate(validation.validRows, actualUserId)
+
+      // Build success message
+      let message = `Successfully imported ${imported} redirect${imported !== 1 ? 's' : ''}`
+      if (validation.skipped > 0) {
+        message += ` (${validation.skipped} duplicate${validation.skipped !== 1 ? 's' : ''} skipped)`
+      }
+
+      // Return success (redirect to list with message via query param)
+      return c.redirect(`/admin/redirects?success=${encodeURIComponent(message)}`, 303)
+
+    } catch (error) {
+      console.error('Error importing CSV:', error)
+      return c.html(
+        renderAlertFragment('error',
+          `Failed to import CSV: ${error instanceof Error ? error.message : 'Unknown error'}`
+        ),
+        500
+      )
     }
   })
 
