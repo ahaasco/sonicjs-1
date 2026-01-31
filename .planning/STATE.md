@@ -5,22 +5,22 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** Reliable, performant URL redirection that preserves SEO value
-**Current focus:** Phase 4 Complete - Ready for Phase 5
+**Current focus:** Phase 5 Complete - Ready for Phase 6
 
 ## Current Position
 
-Phase: 4 of 6 (CSV Import/Export) - COMPLETE
-Plan: 5 of 5 in current phase
+Phase: 5 of 6 (API Endpoints) - COMPLETE
+Plan: 1 of 1 in current phase
 Status: Phase complete, verified
-Last activity: 2026-01-30 — Completed 04-05-PLAN.md (gap closure)
+Last activity: 2026-01-31 — Completed 05-01-PLAN.md
 
-Progress: [███████████████] 100% (15 of 15 plans complete)
+Progress: [████████████████] 100% (16 of 16 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 13.5 min
+- Total plans completed: 16
+- Average duration: 12.6 min
 - Total execution time: 3.4 hours
 
 **By Phase:**
@@ -31,10 +31,11 @@ Progress: [███████████████] 100% (15 of 15 plans c
 | 02 | 4 | 14min | 3.5min |
 | 03 | 4 | 180min | 45.0min |
 | 04 | 5 | 12min | 2.4min |
+| 05 | 1 | 3min | 3.0min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (2min), 04-03 (3min), 04-04 (3min), 04-05 (2min)
-- Trend: Phase 4 complete with consistently fast execution - gap closure resolved TypeScript type safety
+- Last 5 plans: 04-03 (3min), 04-04 (3min), 04-05 (2min), 05-01 (3min)
+- Trend: Phase 5 complete - RESTful API layer added in single efficient plan
 
 *Updated after each plan completion*
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 | 04-04 | HX-Redirect header instead of 303 redirect for import success | Ensures HTMX follows redirect to show success message instead of swapping response into target |
 | 04-04 | Success messages in URL query params | Survives redirect, can be displayed on GET request, disappears on next navigation |
 | 04-05 | Type assertion for csv-parse records | csv-parse returns unknown; as Array<Record<string, string>> matches columns:true behavior |
+| 05-01 | RFC 9457 Problem Details for API errors | Standardized error format for API interoperability and consistent client error handling |
+| 05-01 | Optional Bearer auth with internal bypass | Plugins with user context skip auth; external calls require REDIRECTS_API_KEY env var |
+| 05-01 | 'api' as default userId | Distinguishes API-created redirects; foreign key constraint prevents actual creation without valid user |
 
 ### Pending Todos
 
@@ -105,33 +109,27 @@ None yet.
 
 ### Blockers/Concerns
 
-**Phase 4 Complete:**
-- CSV foundation complete (04-01)
-- CSV export route complete (04-02)
-- CSV import route complete (04-03)
-- CSV UI integration complete (04-04)
-- TypeScript type safety fixed (04-05 gap closure)
-- Full CSV import/export workflow tested and verified
-- Verification passed: 18/18 must-haves verified
+**Phase 5 Complete:**
+- REST API endpoints complete (05-01)
+- All 5 CRUD operations verified (GET list, GET single, POST, PUT, DELETE)
+- RFC 9457 error format implemented
+- Optional Bearer authentication working
+- Programmatic access ready for other plugins
 
-**Ready for Phase 5 (API Endpoints):**
-- All core redirect functionality complete
-- Admin UI fully functional with CRUD operations
-- CSV bulk operations working end-to-end
-- Export/import tested and approved by user
+**Ready for Phase 6 (Analytics Tracking):**
+- All redirect management functionality complete
+- API exposes full CRUD operations
+- Database schema includes redirect_analytics table (from Phase 1)
+- Middleware has fire-and-forget hit recording
 - No blockers identified
 
 ## Session Continuity
 
-Last session: 2026-01-30T20:00:00Z
-Stopped at: Completed Phase 4 verification (04-05 gap closure)
+Last session: 2026-01-31T02:04:51Z
+Stopped at: Completed 05-01-PLAN.md (REST API Endpoints)
 Resume file: None
 
-**Phase 4 Status:** COMPLETE ✓
-- Plan 04-01 complete: CSV service foundation with parsing, generation, and sanitization
-- Plan 04-02 complete: CSV export route with filter-aware downloads and descriptive filenames
-- Plan 04-03 complete: CSV import route with batch validation and D1 batch API
-- Plan 04-04 complete: CSV UI integration with export/import buttons, success messages
-- Plan 04-05 complete: TypeScript type safety gap closure
-- Verification passed: 18/18 must-haves verified
-- Ready to begin Phase 5 (API Endpoints)
+**Phase 5 Status:** COMPLETE ✓
+- Plan 05-01 complete: REST API endpoints with CRUD operations, RFC 9457 errors, optional Bearer auth
+- Verification passed: 5/5 API requirements verified
+- Ready to begin Phase 6 (Analytics Tracking)
