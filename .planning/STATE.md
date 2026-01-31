@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 4 of 6 (CSV Import/Export)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-30 — Completed 04-01-PLAN.md
+Last activity: 2026-01-31 — Completed 04-02-PLAN.md
 
-Progress: [███████████░░] 73% (11 of 15 plans complete)
+Progress: [████████████░] 80% (12 of 15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 17.5 min
-- Total execution time: 3.2 hours
+- Total plans completed: 12
+- Average duration: 16.3 min
+- Total execution time: 3.3 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [███████████░░] 73% (11 of 15 plans complete
 | 01 | 2 | 3min | 1.5min |
 | 02 | 4 | 14min | 3.5min |
 | 03 | 4 | 180min | 45.0min |
-| 04 | 1 | 2min | 2.0min |
+| 04 | 2 | 4min | 2.0min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (5min), 03-02 (5min), 03-03 (3min), 03-04 (167min), 04-01 (2min)
-- Trend: Phase 4 starting strong with focused foundation work
+- Last 5 plans: 03-02 (5min), 03-03 (3min), 03-04 (167min), 04-01 (2min), 04-02 (2min)
+- Trend: Phase 4 maintaining fast execution with focused, well-scoped tasks
 
 *Updated after each plan completion*
 
@@ -84,6 +84,10 @@ Recent decisions affecting current work:
 | 04-01 | Sanitize all user fields in CSV export | Prevents CSV formula injection attacks following OWASP guidance |
 | 04-01 | Accept both numeric and text match types on import | Flexibility for users, internal consistency with text labels for export |
 | 04-01 | Export all redirect fields including timestamps | Complete data export useful for backups and migration scenarios |
+| 04-02 | Export up to 10,000 redirects without pagination | Balance between completeness and safety - prevents memory issues while allowing large exports |
+| 04-02 | Place export route before /:id routes | Prevents 'export' from being matched as an :id parameter |
+| 04-02 | Reuse exact filter logic from list route | Consistency ensures export matches what admin sees in filtered list |
+| 04-02 | Pass filter params to filename builder | Filenames describe content (redirects-301-active.csv) - helps admins organize multiple exports |
 
 ### Pending Todos
 
@@ -93,18 +97,19 @@ None yet.
 
 **Phase 4 In Progress:**
 - CSV foundation complete (04-01)
-- Ready for export route implementation (04-02)
+- CSV export route complete (04-02)
 - Ready for import route implementation (04-03)
 
 **No blockers identified**
 
 ## Session Continuity
 
-Last session: 2026-01-30T18:06:02Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-01-31T01:11:42Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
 
 **Phase 4 Status:** IN PROGRESS
 - Plan 04-01 complete: CSV service foundation with parsing, generation, and sanitization
-- Next: 04-02 (CSV Export Route) or 04-03 (CSV Import Route)
-- CSV foundation ready for route implementation
+- Plan 04-02 complete: CSV export route with filter-aware downloads and descriptive filenames
+- Next: 04-03 (CSV Import Route)
+- Export functionality ready for testing and use
