@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 4 of 6 (CSV Import/Export)
-Plan: 3 of 3 in current phase
+Plan: 4 of 4 in current phase
 Status: Phase complete
-Last activity: 2026-01-30 — Completed 04-03-PLAN.md
+Last activity: 2026-01-31 — Completed 04-04-PLAN.md
 
-Progress: [█████████████] 87% (13 of 15 plans complete)
+Progress: [██████████████] 93% (14 of 15 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 15.2 min
+- Total plans completed: 14
+- Average duration: 14.1 min
 - Total execution time: 3.3 hours
 
 **By Phase:**
@@ -30,11 +30,11 @@ Progress: [█████████████] 87% (13 of 15 plans complete
 | 01 | 2 | 3min | 1.5min |
 | 02 | 4 | 14min | 3.5min |
 | 03 | 4 | 180min | 45.0min |
-| 04 | 3 | 7min | 2.3min |
+| 04 | 4 | 10min | 2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (3min), 03-04 (167min), 04-01 (2min), 04-02 (2min), 04-03 (3min)
-- Trend: Phase 4 complete with consistently fast execution - CSV import/export fully implemented
+- Last 5 plans: 03-04 (167min), 04-01 (2min), 04-02 (2min), 04-03 (3min), 04-04 (3min)
+- Trend: Phase 4 complete with consistently fast execution (avg 2.5min/plan) - CSV import/export fully implemented with UI
 
 *Updated after each plan completion*
 
@@ -92,7 +92,11 @@ Recent decisions affecting current work:
 | 04-03 | D1 batch API with 9-row batches | D1 has 100 parameter limit per statement; with 11 columns, max 9 rows per INSERT for safety |
 | 04-03 | Downloadable error CSV instead of inline messages | Large imports may have many errors - CSV format allows bulk correction |
 | 04-03 | Duplicate handling at upload time | User chooses strategy (reject/skip/update) based on their migration scenario |
-| 04-03 | 10MB file size and 10,000 row limits | Prevents browser/server performance issues and memory exhaustion
+| 04-03 | 10MB file size and 10,000 row limits | Prevents browser/server performance issues and memory exhaustion |
+| 04-04 | Export button shows redirect count from pagination.total | Provides immediate feedback on export size, especially useful when filters are active |
+| 04-04 | Import form hidden by default, toggled via button | Keeps UI clean since import is less frequent than viewing list |
+| 04-04 | HX-Redirect header instead of 303 redirect for import success | Ensures HTMX follows redirect to show success message instead of swapping response into target |
+| 04-04 | Success messages in URL query params | Survives redirect, can be displayed on GET request, disappears on next navigation
 
 ### Pending Todos
 
@@ -104,23 +108,26 @@ None yet.
 - CSV foundation complete (04-01)
 - CSV export route complete (04-02)
 - CSV import route complete (04-03)
-- All CSV import/export functionality implemented and tested
+- CSV UI integration complete (04-04)
+- Full CSV import/export workflow tested and verified
 
 **Ready for Phase 5 (API Endpoints):**
 - All core redirect functionality complete
-- Admin UI fully functional
-- CSV bulk operations working
+- Admin UI fully functional with CRUD operations
+- CSV bulk operations working end-to-end
+- Export/import tested and approved by user
 - No blockers identified
 
 ## Session Continuity
 
-Last session: 2026-01-30T23:58:41Z
-Stopped at: Completed 04-03-PLAN.md (Phase 4 complete)
+Last session: 2026-01-31T01:24:31Z
+Stopped at: Completed 04-04-PLAN.md (Phase 4 complete)
 Resume file: None
 
 **Phase 4 Status:** COMPLETE
 - Plan 04-01 complete: CSV service foundation with parsing, generation, and sanitization
 - Plan 04-02 complete: CSV export route with filter-aware downloads and descriptive filenames
 - Plan 04-03 complete: CSV import route with batch validation and D1 batch API
-- All CSV import/export functionality implemented
+- Plan 04-04 complete: CSV UI integration with export/import buttons, success messages
+- Full CSV import/export workflow verified end-to-end
 - Ready to begin Phase 5 (API Endpoints)
