@@ -139,10 +139,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATUS-03 | Phase 2 | Complete |
 | STATUS-04 | Phase 2 | Complete |
 | STATUS-05 | Phase 2 | Complete |
-| CSV-01 | Phase 4 | Pending |
-| CSV-02 | Phase 4 | Pending |
-| CSV-03 | Phase 4 | Pending |
-| CSV-04 | Phase 4 | Pending |
+| CSV-01 | Phase 4 | Complete |
+| CSV-02 | Phase 4 | Complete |
+| CSV-03 | Phase 4 | Complete |
+| CSV-04 | Phase 4 | Complete |
 | ANALYT-01 | Phase 6 | Pending |
 | ANALYT-02 | Phase 6 | Pending |
 | ANALYT-03 | Phase 6 | Pending |
@@ -161,8 +161,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UI-03 | Phase 3 | Complete |
 | UI-04 | Phase 3 | Complete |
 | UI-05 | Phase 3 | Complete |
-| UI-06 | Phase 3 | Pending |
-| UI-07 | Phase 3 | Pending |
+| UI-06 | Phase 4 | Complete |
+| UI-07 | Phase 4 | Complete |
 | AUDIT-01 | Phase 6 | Pending |
 | AUDIT-02 | Phase 6 | Pending |
 | AUDIT-03 | Phase 6 | Pending |
