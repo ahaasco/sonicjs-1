@@ -146,3 +146,49 @@ export interface RedirectOperationResult {
   /** Warning message (if operation succeeded but with warnings) */
   warning?: string | undefined
 }
+
+/**
+ * CSV parsing error with line number context
+ */
+export interface CSVError {
+  /** Line number in CSV file (1-indexed, includes header) */
+  line: number
+  /** Field name where error occurred */
+  field?: string
+  /** Value that caused the error */
+  value?: string
+  /** Error message */
+  error: string
+}
+
+/**
+ * Parsed redirect row from CSV (before validation)
+ */
+export interface ParsedRedirectRow {
+  /** Source URL pattern to match */
+  source_url: string
+  /** Destination URL to redirect to */
+  destination_url: string
+  /** Match type as string: 'exact', 'partial', 'regex' or '0', '1', '2' */
+  match_type: string
+  /** HTTP status code as string */
+  status_code: string
+  /** Active status as string: 'true' or 'false' */
+  active: string
+  /** Whether to include query params in matching */
+  include_query_params?: string
+  /** Whether to preserve query params when redirecting */
+  preserve_query_params?: string
+}
+
+/**
+ * Result of CSV parsing
+ */
+export interface CSVParseResult {
+  /** Whether parsing and basic validation succeeded */
+  isValid: boolean
+  /** Successfully parsed rows */
+  rows: ParsedRedirectRow[]
+  /** Parse errors with line number context */
+  errors: CSVError[]
+}
