@@ -114,10 +114,12 @@ Plans:
   2. Admin can view hit count for each redirect in list view
   3. Admin can view last updated timestamp and user for each redirect
   4. Hit count increments asynchronously (redirect executes immediately, tracking happens in background)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: TBD during planning
+- [ ] 06-01-PLAN.md — Database migration and type definitions for analytics/audit
+- [ ] 06-02-PLAN.md — Service layer updates with LEFT JOINs and update tracking
+- [ ] 06-03-PLAN.md — UI display of hit counts and audit information
 
 ## Progress
 
@@ -131,4 +133,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Admin UI | 4/4 | Complete | 2026-01-30 |
 | 4. CSV Import/Export | 5/5 | Complete | 2026-01-30 |
 | 5. API Endpoints | 1/1 | Complete | 2026-01-30 |
-| 6. Analytics & Audit Trail | 0/0 | Not started | - |
+| 6. Analytics & Audit Trail | 0/3 | Planned | - |
