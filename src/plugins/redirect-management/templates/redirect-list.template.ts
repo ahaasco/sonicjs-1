@@ -547,6 +547,7 @@ function renderTableRow(redirect: Redirect): HtmlEscapedString | Promise<HtmlEsc
       data-matchtype="${redirect.matchType}"
       data-isactive="${redirect.isActive ? '1' : '0'}"
       data-hitcount="${(redirect as any).hitCount || 0}"
+      data-sourceplugin="${(redirect as any).sourcePlugin || ''}"
       data-id="${redirect.id}"
       class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
     >
@@ -559,9 +560,12 @@ function renderTableRow(redirect: Redirect): HtmlEscapedString | Promise<HtmlEsc
         />
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
-        <span class="inline-block max-w-xs truncate" title="${redirect.source}">
-          ${redirect.source}
-        </span>
+        <div class="flex items-center">
+          <span class="inline-block max-w-xs truncate" title="${redirect.source}">
+            ${redirect.source}
+          </span>
+          ${renderSourcePluginBadge((redirect as any).sourcePlugin)}
+        </div>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
         <span class="inline-block max-w-xs truncate" title="${redirect.destination}">
@@ -673,6 +677,21 @@ function renderHitCountBadge(hitCount: number): HtmlEscapedString | Promise<Html
   return html`
     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}">
       ${hitCount.toLocaleString()}
+    </span>
+  `
+}
+
+/**
+ * Render source plugin badge (shows which plugin created the redirect)
+ */
+function renderSourcePluginBadge(sourcePlugin: string | null | undefined): HtmlEscapedString | Promise<HtmlEscapedString> {
+  if (!sourcePlugin) {
+    return html``
+  }
+
+  return html`
+    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400" title="Created by ${sourcePlugin} plugin">
+      ${sourcePlugin}
     </span>
   `
 }
