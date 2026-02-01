@@ -158,7 +158,7 @@ export function renderRedirectFormPage(data: RedirectFormPageData): HtmlEscapedS
           </div>
 
           <!-- Section 3: Options -->
-          <div class="pb-8">
+          <div class="border-b border-zinc-200 dark:border-zinc-800 pb-8">
             <h2 class="text-base font-semibold text-zinc-950 dark:text-white mb-4">
               Options
             </h2>
@@ -221,6 +221,50 @@ export function renderRedirectFormPage(data: RedirectFormPageData): HtmlEscapedS
             </div>
           </div>
 
+          ${isEdit && redirect ? html`
+            <!-- Section 4: Audit Trail (Edit mode only) -->
+            <div class="pb-8">
+              <h2 class="text-base font-semibold text-zinc-950 dark:text-white mb-4">
+                Audit Trail
+              </h2>
+              <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <dt class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Created By</dt>
+                  <dd class="mt-1 text-sm text-zinc-900 dark:text-zinc-100">
+                    ${(redirect as any).createdByName || 'Unknown'}
+                    <span class="text-zinc-500 dark:text-zinc-400 ml-1">
+                      (${formatRelativeTime(redirect.createdAt)})
+                    </span>
+                  </dd>
+                </div>
+                ${(redirect as any).updatedByName ? html`
+                  <div>
+                    <dt class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Last Updated By</dt>
+                    <dd class="mt-1 text-sm text-zinc-900 dark:text-zinc-100">
+                      ${(redirect as any).updatedByName}
+                      <span class="text-zinc-500 dark:text-zinc-400 ml-1">
+                        (${formatRelativeTime(redirect.updatedAt)})
+                      </span>
+                    </dd>
+                  </div>
+                ` : ''}
+                ${(redirect as any).hitCount !== undefined ? html`
+                  <div>
+                    <dt class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total Hits</dt>
+                    <dd class="mt-1 text-sm text-zinc-900 dark:text-zinc-100">
+                      ${((redirect as any).hitCount || 0).toLocaleString()}
+                      ${(redirect as any).lastHitAt ? html`
+                        <span class="text-zinc-500 dark:text-zinc-400 ml-1">
+                          (last: ${formatRelativeTime((redirect as any).lastHitAt)})
+                        </span>
+                      ` : ''}
+                    </dd>
+                  </div>
+                ` : ''}
+              </dl>
+            </div>
+          ` : ''}
+
           <!-- Form Actions -->
           <div class="flex items-center justify-end gap-x-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <a
@@ -244,6 +288,26 @@ export function renderRedirectFormPage(data: RedirectFormPageData): HtmlEscapedS
   `
 
   return renderLayout(pageTitle, content)
+}
+
+/**
+ * Format relative time using native Intl.RelativeTimeFormat
+ */
+function formatRelativeTime(timestamp: number): string {
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+  const seconds = Math.floor((timestamp - Date.now()) / 1000)
+
+  if (Math.abs(seconds) < 60) return rtf.format(seconds, 'second')
+  const minutes = Math.floor(seconds / 60)
+  if (Math.abs(minutes) < 60) return rtf.format(minutes, 'minute')
+  const hours = Math.floor(minutes / 60)
+  if (Math.abs(hours) < 24) return rtf.format(hours, 'hour')
+  const days = Math.floor(hours / 24)
+  if (Math.abs(days) < 30) return rtf.format(days, 'day')
+  const months = Math.floor(days / 30)
+  if (Math.abs(months) < 12) return rtf.format(months, 'month')
+  const years = Math.floor(months / 12)
+  return rtf.format(years, 'year')
 }
 
 /**
