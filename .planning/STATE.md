@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 ## Current Position
 
 Phase: 6 of 6 (Analytics & Audit Trail) - IN PROGRESS
-Plan: 1 of 1 in current phase
-Status: Plan 06-01 complete
-Last activity: 2026-02-01 — Completed 06-01-PLAN.md
+Plan: 2 of 3 in current phase
+Status: Plan 06-02 complete
+Last activity: 2026-02-01 — Completed 06-02-PLAN.md
 
-Progress: [█████████████████] 100% (17 of 17 plans complete)
+Progress: [█████████████████] 100% (18 of 18 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
-- Average duration: 11.8 min
+- Total plans completed: 18
+- Average duration: 11.1 min
 - Total execution time: 3.4 hours
 
 **By Phase:**
@@ -32,11 +32,11 @@ Progress: [█████████████████] 100% (17 of 17 p
 | 03 | 4 | 180min | 45.0min |
 | 04 | 5 | 12min | 2.4min |
 | 05 | 1 | 3min | 3.0min |
-| 06 | 1 | 1min | 1.0min |
+| 06 | 2 | 3min | 1.5min |
 
 **Recent Trend:**
-- Last 5 plans: 04-04 (3min), 04-05 (2min), 05-01 (3min), 06-01 (1min)
-- Trend: Phase 6 started - Database and type foundation for analytics/audit trail
+- Last 5 plans: 04-05 (2min), 05-01 (3min), 06-01 (1min), 06-02 (2min)
+- Trend: Phase 6 analytics integration - Service layer now includes hit counts and audit trail
 
 *Updated after each plan completion*
 
@@ -106,6 +106,10 @@ Recent decisions affecting current work:
 | 06-01 | Analytics and audit fields as optional in Redirect interface | These fields populated via LEFT JOINs in admin UI, won't be present in all contexts |
 | 06-01 | Backfill updated_by with created_by for existing records | Provides meaningful historical data, assumes creator was last modifier for pre-migration redirects |
 | 06-01 | Create index on updated_by column | Admin UI JOINs with users table require index to prevent performance degradation |
+| 06-02 | Use LEFT JOIN (not INNER JOIN) for analytics and users tables | New redirects have no analytics row yet and updated_by may be NULL for old records |
+| 06-02 | Table aliases (r, a, creator, updater) in queries | Improves readability and prevents ambiguity in multi-table JOIN queries |
+| 06-02 | userId parameter optional in update() | Maintains backward compatibility with API calls and programmatic updates without user context |
+| 06-02 | Conditional field assignment in mapRowToRedirect | TypeScript exactOptionalPropertyTypes compliance requires only assigning fields when present |
 
 ### Pending Todos
 
@@ -115,24 +119,28 @@ None yet.
 
 **Phase 6 In Progress:**
 - Plan 06-01 complete: Database schema and TypeScript types for analytics/audit
-- updated_by column added to redirects table
-- Redirect interface extended with optional analytics/audit fields
-- Foundation ready for admin UI integration
+- Plan 06-02 complete: Service layer enhanced with LEFT JOINs for analytics/audit data
+- RedirectService.list() and getById() now return hit counts and user names
+- RedirectService.update() tracks userId when provided
+- Foundation and service layer ready for admin UI integration
 
 **Next Steps:**
-- Integrate analytics/audit data into admin redirect list UI
-- Display hit counts, last hit timestamps, and user names
+- Integrate analytics/audit data into admin UI templates (06-03)
+- Display hit counts and user names in redirect list table
+- Pass userId from admin route handlers to update() method
 - Run migration 034 before testing UI integration
 - No blockers identified
 
 ## Session Continuity
 
-Last session: 2026-02-01T16:36:54Z
-Stopped at: Completed 06-01-PLAN.md (Analytics & Audit Foundation)
+Last session: 2026-02-01T16:41:39Z
+Stopped at: Completed 06-02-PLAN.md (Service Layer Analytics Integration)
 Resume file: None
 
 **Phase 6 Status:** IN PROGRESS
 - Plan 06-01 complete: Database schema and TypeScript types for analytics/audit tracking
-- Migration 034 created with updated_by column, index, and backfill
-- Redirect interface extended with hitCount, lastHitAt, createdByName, updatedByName, updatedBy
-- Ready for admin UI integration (next plan)
+- Plan 06-02 complete: Service layer enhanced with LEFT JOINs for analytics and audit data
+- RedirectService queries now include hit counts from redirect_analytics table
+- RedirectService queries now include user names from users table via LEFT JOINs
+- RedirectService.update() tracks userId in updated_by column when provided
+- Ready for admin UI template integration (06-03)
