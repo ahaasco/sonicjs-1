@@ -445,6 +445,10 @@ function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEsc
               Active
               <span id="sort-icon-isActive" class="ml-1 inline-block w-3">↕</span>
             </th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700" onclick="sortTable('hitCount')">
+              Hits
+              <span id="sort-icon-hitCount" class="ml-1 inline-block w-3">↕</span>
+            </th>
             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
               Actions
             </th>
@@ -508,7 +512,7 @@ function renderTable(redirects: Redirect[]): HtmlEscapedString | Promise<HtmlEsc
 
       function updateSortIcons(column, ascending) {
         // Reset all icons to default
-        const allColumns = ['source', 'destination', 'statusCode', 'matchType', 'isActive'];
+        const allColumns = ['source', 'destination', 'statusCode', 'matchType', 'isActive', 'hitCount'];
         allColumns.forEach(col => {
           const icon = document.getElementById('sort-icon-' + col);
           if (icon) {
@@ -542,6 +546,7 @@ function renderTableRow(redirect: Redirect): HtmlEscapedString | Promise<HtmlEsc
       data-statuscode="${redirect.statusCode}"
       data-matchtype="${redirect.matchType}"
       data-isactive="${redirect.isActive ? '1' : '0'}"
+      data-hitcount="${(redirect as any).hitCount || 0}"
       data-id="${redirect.id}"
       class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
     >
@@ -571,6 +576,9 @@ function renderTableRow(redirect: Redirect): HtmlEscapedString | Promise<HtmlEsc
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
         ${renderActiveIndicator(redirect.isActive)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        ${renderHitCountBadge((redirect as any).hitCount || 0)}
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <a
@@ -647,6 +655,26 @@ function renderActiveIndicator(active: boolean): HtmlEscapedString | Promise<Htm
       </span>
     `
   }
+}
+
+/**
+ * Render hit count badge with color coding
+ */
+function renderHitCountBadge(hitCount: number): HtmlEscapedString | Promise<HtmlEscapedString> {
+  // Color coding based on hit count ranges
+  const colorClass = hitCount === 0
+    ? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+    : hitCount < 10
+    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+    : hitCount < 100
+    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+    : 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400'
+
+  return html`
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}">
+      ${hitCount.toLocaleString()}
+    </span>
+  `
 }
 
 /**
