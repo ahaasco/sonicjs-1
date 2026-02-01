@@ -57,6 +57,8 @@ export interface Redirect {
   updatedBy?: string
   /** Name of user who last updated this redirect (populated via JOIN with users table) */
   updatedByName?: string
+  /** Plugin ID that created this redirect (null if created via admin UI) */
+  sourcePlugin?: string | null
 }
 
 /**
@@ -103,6 +105,8 @@ export interface CreateRedirectInput {
   includeQueryParams?: boolean
   /** Whether to preserve query params when redirecting (default: false) */
   preserveQueryParams?: boolean
+  /** Plugin ID that created this redirect (null if created via admin UI) */
+  sourcePlugin?: string | null
 }
 
 /**
@@ -137,6 +141,8 @@ export interface RedirectFilter {
   matchType?: MatchType
   /** Search term (searches source and destination) */
   search?: string
+  /** Filter by source plugin (null = admin-created, string = plugin ID) */
+  sourcePlugin?: string | null
   /** Maximum number of results to return (default: 50) */
   limit?: number
   /** Number of results to skip (for pagination) */

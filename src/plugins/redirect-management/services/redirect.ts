@@ -63,6 +63,7 @@ export class RedirectService {
       const isActive = input.isActive ?? true
       const includeQueryParams = input.includeQueryParams ?? false
       const preserveQueryParams = input.preserveQueryParams ?? false
+      const sourcePlugin = input.sourcePlugin ?? null
 
       // Load existing redirects for circular detection
       const existingMap = await this.getAllSourceDestinationMap()
@@ -84,15 +85,15 @@ export class RedirectService {
 
       // Insert into database
       // NOTE: Migration 033 adds include_query_params and preserve_query_params columns
-      // Using COALESCE for backward compatibility with existing rows
+      // NOTE: Migration 035 adds source_plugin column
       await this.db
         .prepare(`
           INSERT INTO redirects (
             id, source, destination, match_type, status_code, is_active,
-            include_query_params, preserve_query_params,
+            include_query_params, preserve_query_params, source_plugin,
             created_by, created_at, updated_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
         .bind(
           id,
@@ -103,6 +104,7 @@ export class RedirectService {
           isActive ? 1 : 0,
           includeQueryParams ? 1 : 0,
           preserveQueryParams ? 1 : 0,
+          sourcePlugin,
           userId,
           now,
           now
@@ -193,6 +195,7 @@ export class RedirectService {
             r.id, r.source, r.destination, r.match_type, r.status_code, r.is_active,
             COALESCE(r.include_query_params, 0) as include_query_params,
             COALESCE(r.preserve_query_params, 0) as preserve_query_params,
+            r.source_plugin,
             r.created_by, r.created_at, r.updated_at, r.updated_by,
             COALESCE(a.hit_count, 0) as hit_count,
             a.last_hit_at,
@@ -405,6 +408,14 @@ export class RedirectService {
         const searchPattern = `%${filter.search}%`
         bindings.push(searchPattern, searchPattern)
       }
+      if (filter?.sourcePlugin !== undefined) {
+        if (filter.sourcePlugin === null) {
+          conditions.push('r.source_plugin IS NULL')
+        } else {
+          conditions.push('r.source_plugin = ?')
+          bindings.push(filter.sourcePlugin)
+        }
+      }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
@@ -417,6 +428,7 @@ export class RedirectService {
           r.id, r.source, r.destination, r.match_type, r.status_code, r.is_active,
           COALESCE(r.include_query_params, 0) as include_query_params,
           COALESCE(r.preserve_query_params, 0) as preserve_query_params,
+          r.source_plugin,
           r.created_by, r.created_at, r.updated_at, r.updated_by,
           COALESCE(a.hit_count, 0) as hit_count,
           a.last_hit_at,
@@ -467,6 +479,14 @@ export class RedirectService {
         conditions.push('(source LIKE ? OR destination LIKE ?)')
         const searchPattern = `%${filter.search}%`
         bindings.push(searchPattern, searchPattern)
+      }
+      if (filter?.sourcePlugin !== undefined) {
+        if (filter.sourcePlugin === null) {
+          conditions.push('source_plugin IS NULL')
+        } else {
+          conditions.push('source_plugin = ?')
+          bindings.push(filter.sourcePlugin)
+        }
       }
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -570,6 +590,9 @@ export class RedirectService {
     }
     if (row.updated_by !== undefined) {
       redirect.updatedBy = row.updated_by as string
+    }
+    if (row.source_plugin !== undefined) {
+      redirect.sourcePlugin = row.source_plugin as string | null
     }
 
     return redirect
