@@ -179,7 +179,7 @@ export async function warmRedirectCache(db: D1Database): Promise<number> {
                COALESCE(a.hit_count, 0) as hit_count
         FROM redirects r
         LEFT JOIN redirect_analytics a ON r.id = a.redirect_id
-        WHERE r.is_active = 1
+        WHERE r.is_active = 1 AND r.deleted_at IS NULL
         ORDER BY hit_count DESC
         LIMIT 1000
       `)

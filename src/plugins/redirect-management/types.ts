@@ -63,6 +63,8 @@ export interface Redirect {
   updatedByName?: string
   /** Plugin ID that created this redirect (null if created via admin UI) */
   sourcePlugin?: string | null
+  /** Timestamp when redirect was soft-deleted (null if not deleted) */
+  deletedAt?: number | null
 }
 
 /**

@@ -274,7 +274,7 @@ export class RedirectService {
           LEFT JOIN redirect_analytics a ON r.id = a.redirect_id
           LEFT JOIN users creator ON r.created_by = creator.id
           LEFT JOIN users updater ON r.updated_by = updater.id
-          WHERE r.id = ?
+          WHERE r.id = ? AND r.deleted_at IS NULL
         `)
         .bind(id)
         .first()
@@ -426,16 +426,17 @@ export class RedirectService {
   }
 
   /**
-   * Delete a redirect
+   * Delete a redirect (soft delete - sets deleted_at timestamp)
    */
   async delete(id: string): Promise<RedirectOperationResult> {
     try {
       // Get redirect before deleting (for Cloudflare sync)
       const redirect = await this.getById(id)
 
+      const now = Date.now()
       const result = await this.db
-        .prepare(`DELETE FROM redirects WHERE id = ?`)
-        .bind(id)
+        .prepare(`UPDATE redirects SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL`)
+        .bind(now, id)
         .run()
 
       if (result.meta.changes > 0) {
@@ -477,7 +478,7 @@ export class RedirectService {
    */
   async list(filter?: RedirectFilter): Promise<Redirect[]> {
     try {
-      const conditions: string[] = []
+      const conditions: string[] = ['r.deleted_at IS NULL']
       const bindings: any[] = []
 
       // Build WHERE clause from filters
@@ -507,7 +508,7 @@ export class RedirectService {
         }
       }
 
-      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+      const whereClause = `WHERE ${conditions.join(' AND ')}`
 
       // Build query with pagination
       const limit = filter?.limit ?? 50
@@ -551,7 +552,7 @@ export class RedirectService {
    */
   async count(filter?: RedirectFilter): Promise<number> {
     try {
-      const conditions: string[] = []
+      const conditions: string[] = ['deleted_at IS NULL']
       const bindings: any[] = []
 
       // Build WHERE clause from filters (same as list())
@@ -581,7 +582,7 @@ export class RedirectService {
         }
       }
 
-      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+      const whereClause = `WHERE ${conditions.join(' AND ')}`
 
       const result = await this.db
         .prepare(`SELECT COUNT(*) as count FROM redirects ${whereClause}`)
@@ -610,7 +611,7 @@ export class RedirectService {
             COALESCE(preserve_path_suffix, 1) as preserve_path_suffix,
             created_by, created_at, updated_at
           FROM redirects
-          WHERE LOWER(source) = ? AND is_active = 1
+          WHERE LOWER(source) = ? AND is_active = 1 AND deleted_at IS NULL
           LIMIT 1
         `)
         .bind(normalizedSource.toLowerCase())
@@ -634,7 +635,7 @@ export class RedirectService {
   async getAllSourceDestinationMap(): Promise<Map<string, string>> {
     try {
       const result = await this.db
-        .prepare(`SELECT source, destination FROM redirects WHERE is_active = 1`)
+        .prepare(`SELECT source, destination FROM redirects WHERE is_active = 1 AND deleted_at IS NULL`)
         .all()
 
       const map = new Map<string, string>()
@@ -689,6 +690,9 @@ export class RedirectService {
     }
     if (row.source_plugin !== undefined) {
       redirect.sourcePlugin = row.source_plugin as string | null
+    }
+    if (row.deleted_at !== undefined) {
+      redirect.deletedAt = row.deleted_at as number | null
     }
 
     return redirect
