@@ -47,6 +47,16 @@ export interface Redirect {
   includeQueryParams: boolean
   /** Whether to preserve query params when redirecting */
   preserveQueryParams: boolean
+  /** Number of times this redirect has been triggered (populated via JOIN with redirect_analytics) */
+  hitCount?: number
+  /** Timestamp of last redirect hit in milliseconds (populated via JOIN with redirect_analytics) */
+  lastHitAt?: number | null
+  /** Name of user who created this redirect (populated via JOIN with users table) */
+  createdByName?: string
+  /** User ID who last updated this redirect */
+  updatedBy?: string
+  /** Name of user who last updated this redirect (populated via JOIN with users table) */
+  updatedByName?: string
 }
 
 /**
