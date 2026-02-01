@@ -381,8 +381,10 @@ export function createRedirectAdminRoutes(): Hono {
         destination: body.destination as string,
         statusCode: (parseInt(body.status_code as string) || 301) as StatusCode,
         matchType: (parseInt(body.match_type as string) || 0) as MatchType,
-        includeQueryParams: body.include_query_params === '1',
-        preserveQueryParams: body.preserve_query_params === '1',
+        preserveQueryString: body.preserve_query_string === '1',
+        includeSubdomains: body.include_subdomains === '1',
+        subpathMatching: body.subpath_matching === '1',
+        preservePathSuffix: body.preserve_path_suffix === '1',
         isActive: body.active === '1'
       }
 
@@ -396,7 +398,7 @@ export function createRedirectAdminRoutes(): Hono {
         userId = adminUser?.id as string || 'system'
       }
 
-      const service = new RedirectService(db)
+      const service = new RedirectService(db, c.env)
       const result = await service.create(input, userId)
 
       console.log('[Redirect Admin] Service result:', JSON.stringify({ success: result.success, error: result.error, warning: result.warning }, null, 2))
@@ -444,8 +446,10 @@ export function createRedirectAdminRoutes(): Hono {
         destination: body.destination as string,
         statusCode: (parseInt(body.status_code as string) || 301) as StatusCode,
         matchType: (parseInt(body.match_type as string) || 0) as MatchType,
-        includeQueryParams: body.include_query_params === '1',
-        preserveQueryParams: body.preserve_query_params === '1',
+        preserveQueryString: body.preserve_query_string === '1',
+        includeSubdomains: body.include_subdomains === '1',
+        subpathMatching: body.subpath_matching === '1',
+        preservePathSuffix: body.preserve_path_suffix === '1',
         isActive: body.active === '1'
       }
 
@@ -453,7 +457,7 @@ export function createRedirectAdminRoutes(): Hono {
 
       // Get user ID from context
       const userId = c.get('user')?.id
-      const service = new RedirectService(db)
+      const service = new RedirectService(db, c.env)
       const result = await service.update(id, input, userId)
 
       console.log('[Redirect Admin] Service result:', JSON.stringify({ success: result.success, error: result.error, warning: result.warning }, null, 2))
@@ -492,7 +496,7 @@ export function createRedirectAdminRoutes(): Hono {
         return c.json({ success: false, error: 'Database not available' }, 500)
       }
 
-      const service = new RedirectService(db)
+      const service = new RedirectService(db, c.env)
       const result = await service.delete(id)
 
       if (result.success) {
@@ -567,6 +571,49 @@ export function createRedirectAdminRoutes(): Hono {
     } catch (error) {
       console.error('Error in bulk delete:', error)
       return c.json({ success: false, error: 'Failed to process bulk delete request' }, 500)
+    }
+  })
+
+  /**
+   * POST /admin/redirects/sync-cloudflare
+   * Manually sync all eligible redirects to Cloudflare
+   */
+  admin.post('/sync-cloudflare', async (c: any) => {
+    try {
+      const db = c.env?.DB || c.get('db')
+      if (!db) {
+        return c.json({ success: false, error: 'Database not available' }, 500)
+      }
+
+      const service = new RedirectService(db, c.env)
+
+      if (!service.isCloudflareConfigured()) {
+        return c.json({
+          success: false,
+          error: 'Cloudflare not configured. Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID environment variables.'
+        }, 400)
+      }
+
+      const result = await service.syncAllToCloudflare()
+
+      if (result.success) {
+        return c.json({
+          success: true,
+          message: `Successfully synced ${result.itemsAdded} redirects to Cloudflare`,
+          itemsAdded: result.itemsAdded
+        })
+      } else {
+        return c.json({
+          success: false,
+          error: result.error || 'Failed to sync to Cloudflare'
+        }, 500)
+      }
+    } catch (error) {
+      console.error('Error syncing to Cloudflare:', error)
+      return c.json({
+        success: false,
+        error: `Failed to sync: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }, 500)
     }
   })
 

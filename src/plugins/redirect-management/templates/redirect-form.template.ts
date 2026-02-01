@@ -148,54 +148,93 @@ export function renderRedirectFormPage(data: RedirectFormPageData): HtmlEscapedS
                 class="w-full rounded-lg bg-white dark:bg-white/5 px-3 py-2 text-sm text-zinc-950 dark:text-white ring-1 ring-inset ring-zinc-950/10 dark:ring-white/10 focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="0" ${(!redirect || redirect.matchType === 0) ? 'selected' : ''}>Exact</option>
-                <option value="1" ${redirect?.matchType === 1 ? 'selected' : ''}>Partial</option>
-                <option value="2" ${redirect?.matchType === 2 ? 'selected' : ''}>Regex</option>
+                <option value="1" ${redirect?.matchType === 1 ? 'selected' : ''}>Wildcard</option>
+                <option value="2" ${redirect?.matchType === 2 ? 'selected' : ''}>Regex (not synced to Cloudflare)</option>
               </select>
               <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                Exact: URL must match exactly. Partial: Matches URLs starting with source. Regex: Pattern matching.
+                Exact: URL must match exactly. Wildcard: Matches URLs with prefix/contains. Regex: Pattern matching (local only).
               </p>
             </div>
           </div>
 
-          <!-- Section 3: Options -->
+          <!-- Section 3: Options (Cloudflare-aligned) -->
           <div class="border-b border-zinc-200 dark:border-zinc-800 pb-8">
             <h2 class="text-base font-semibold text-zinc-950 dark:text-white mb-4">
               Options
+              <span class="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">(Cloudflare Bulk Redirects compatible)</span>
             </h2>
 
-            <!-- Include Query Params -->
+            <!-- Preserve Query String -->
             <div class="mb-4">
               <label class="flex items-start">
                 <input
                   type="checkbox"
-                  name="include_query_params"
+                  name="preserve_query_string"
                   value="1"
-                  ${redirect?.includeQueryParams ? 'checked' : ''}
+                  ${redirect?.preserveQueryString ? 'checked' : ''}
                   class="mt-0.5 h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
                 />
                 <span class="ml-2 block">
-                  <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Include Query Params</span>
+                  <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Preserve Query String</span>
                   <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
-                    Match query parameters in source URL
+                    Append original query string to destination URL
                   </span>
                 </span>
               </label>
             </div>
 
-            <!-- Preserve Query Params -->
+            <!-- Include Subdomains -->
             <div class="mb-4">
               <label class="flex items-start">
                 <input
                   type="checkbox"
-                  name="preserve_query_params"
+                  name="include_subdomains"
                   value="1"
-                  ${redirect?.preserveQueryParams ? 'checked' : ''}
+                  ${redirect?.includeSubdomains ? 'checked' : ''}
                   class="mt-0.5 h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
                 />
                 <span class="ml-2 block">
-                  <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Preserve Query Params</span>
+                  <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Include Subdomains</span>
                   <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
-                    Append original query parameters to destination
+                    Match requests from all subdomains (e.g., www.example.com, blog.example.com)
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            <!-- Subpath Matching -->
+            <div class="mb-4">
+              <label class="flex items-start">
+                <input
+                  type="checkbox"
+                  name="subpath_matching"
+                  value="1"
+                  ${redirect?.subpathMatching ? 'checked' : ''}
+                  class="mt-0.5 h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span class="ml-2 block">
+                  <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Subpath Matching</span>
+                  <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
+                    Match all paths that start with the source URL pattern
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            <!-- Preserve Path Suffix -->
+            <div class="mb-4">
+              <label class="flex items-start">
+                <input
+                  type="checkbox"
+                  name="preserve_path_suffix"
+                  value="1"
+                  ${(!redirect || redirect.preservePathSuffix) ? 'checked' : ''}
+                  class="mt-0.5 h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span class="ml-2 block">
+                  <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Preserve Path Suffix</span>
+                  <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">
+                    Append the remaining path to destination (requires Subpath Matching)
                   </span>
                 </span>
               </label>

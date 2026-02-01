@@ -4,9 +4,16 @@ import type { D1Database } from '@cloudflare/workers-types'
 import { normalizeUrl } from '../utils/url-normalizer'
 import { validateRedirect, type ValidationResult } from '../utils/validator'
 import { invalidateRedirectCache } from '../middleware/redirect'
+import { CloudflareBulkService, isEligibleForSync } from './cloudflare-bulk'
 
 export class RedirectService {
-  constructor(private db: D1Database) {}
+  private cloudflareService: CloudflareBulkService | null = null
+
+  constructor(private db: D1Database, private env?: any) {
+    if (env) {
+      this.cloudflareService = new CloudflareBulkService(env)
+    }
+  }
 
   /**
    * Get plugin settings from the database
@@ -43,7 +50,54 @@ export class RedirectService {
    */
   getDefaultSettings(): RedirectSettings {
     return {
-      enabled: true
+      enabled: true,
+      autoOffloadEnabled: false
+    }
+  }
+
+  /**
+   * Check if Cloudflare auto-offload is enabled and configured
+   */
+  private async shouldSyncToCloudflare(): Promise<boolean> {
+    if (!this.cloudflareService?.isConfigured()) {
+      return false
+    }
+    const { data: settings } = await this.getSettings()
+    return settings.autoOffloadEnabled === true
+  }
+
+  /**
+   * Sync redirect to Cloudflare if enabled (fire-and-forget)
+   */
+  private async syncToCloudflareIfEnabled(redirect: Redirect): Promise<void> {
+    try {
+      const shouldSync = await this.shouldSyncToCloudflare()
+      if (shouldSync && this.cloudflareService && isEligibleForSync(redirect)) {
+        const result = await this.cloudflareService.syncRedirect(redirect)
+        if (!result.success) {
+          console.error('[RedirectService] Cloudflare sync failed:', result.error)
+        }
+      }
+    } catch (error) {
+      // Log but don't throw - Cloudflare sync failures shouldn't block D1 operations
+      console.error('[RedirectService] Cloudflare sync error:', error)
+    }
+  }
+
+  /**
+   * Remove redirect from Cloudflare if enabled (fire-and-forget)
+   */
+  private async removeFromCloudflareIfEnabled(sourceUrl: string): Promise<void> {
+    try {
+      const shouldSync = await this.shouldSyncToCloudflare()
+      if (shouldSync && this.cloudflareService) {
+        const result = await this.cloudflareService.removeRedirect(sourceUrl)
+        if (!result.success) {
+          console.error('[RedirectService] Cloudflare remove failed:', result.error)
+        }
+      }
+    } catch (error) {
+      console.error('[RedirectService] Cloudflare remove error:', error)
     }
   }
 
@@ -61,8 +115,10 @@ export class RedirectService {
       const matchType = input.matchType ?? 0 // MatchType.EXACT
       const statusCode = input.statusCode ?? 301
       const isActive = input.isActive ?? true
-      const includeQueryParams = input.includeQueryParams ?? false
-      const preserveQueryParams = input.preserveQueryParams ?? false
+      const preserveQueryString = input.preserveQueryString ?? false
+      const includeSubdomains = input.includeSubdomains ?? false
+      const subpathMatching = input.subpathMatching ?? false
+      const preservePathSuffix = input.preservePathSuffix ?? true
       const sourcePlugin = input.sourcePlugin ?? null
 
       // Load existing redirects for circular detection
@@ -84,16 +140,15 @@ export class RedirectService {
       const now = Date.now()
 
       // Insert into database
-      // NOTE: Migration 033 adds include_query_params and preserve_query_params columns
-      // NOTE: Migration 035 adds source_plugin column
+      // NOTE: Migration 036 adds Cloudflare-aligned columns
       await this.db
         .prepare(`
           INSERT INTO redirects (
             id, source, destination, match_type, status_code, is_active,
-            include_query_params, preserve_query_params, source_plugin,
-            created_by, created_at, updated_at
+            preserve_query_string, include_subdomains, subpath_matching, preserve_path_suffix,
+            source_plugin, created_by, created_at, updated_at
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
         .bind(
           id,
@@ -102,8 +157,10 @@ export class RedirectService {
           matchType,
           statusCode,
           isActive ? 1 : 0,
-          includeQueryParams ? 1 : 0,
-          preserveQueryParams ? 1 : 0,
+          preserveQueryString ? 1 : 0,
+          includeSubdomains ? 1 : 0,
+          subpathMatching ? 1 : 0,
+          preservePathSuffix ? 1 : 0,
           sourcePlugin,
           userId,
           now,
@@ -116,6 +173,11 @@ export class RedirectService {
 
       // Invalidate cache after successful creation
       invalidateRedirectCache()
+
+      // Sync to Cloudflare if enabled (async, non-blocking)
+      if (redirect) {
+        this.syncToCloudflareIfEnabled(redirect)
+      }
 
       return {
         success: true,
@@ -142,14 +204,14 @@ export class RedirectService {
     const now = Date.now()
 
     // D1 has 100 parameter limit per statement
-    // With 11 columns, max ~9 rows per INSERT
-    const BATCH_SIZE = 9
+    // With 13 columns, max ~7 rows per INSERT
+    const BATCH_SIZE = 7
     const statements = []
 
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
       const batch = rows.slice(i, i + BATCH_SIZE)
 
-      const placeholders = batch.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')
+      const placeholders = batch.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ')
       const values = batch.flatMap(r => [
         crypto.randomUUID(),
         r.source,
@@ -157,8 +219,10 @@ export class RedirectService {
         r.matchType,
         r.statusCode,
         r.isActive ? 1 : 0,
-        r.includeQueryParams ? 1 : 0,
-        r.preserveQueryParams ? 1 : 0,
+        r.preserveQueryString ? 1 : 0,
+        r.includeSubdomains ? 1 : 0,
+        r.subpathMatching ? 1 : 0,
+        r.preservePathSuffix ? 1 : 0,
         userId,
         now,
         now
@@ -168,7 +232,7 @@ export class RedirectService {
         this.db.prepare(`
           INSERT INTO redirects (
             id, source, destination, match_type, status_code, is_active,
-            include_query_params, preserve_query_params,
+            preserve_query_string, include_subdomains, subpath_matching, preserve_path_suffix,
             created_by, created_at, updated_at
           ) VALUES ${placeholders}
         `).bind(...values)
@@ -180,6 +244,9 @@ export class RedirectService {
 
     // Invalidate cache
     invalidateRedirectCache()
+
+    // Note: Cloudflare sync for batch imports should be done via manual "Sync Now" button
+    // to avoid rate limiting and performance issues
 
     return rows.length
   }
@@ -193,8 +260,10 @@ export class RedirectService {
         .prepare(`
           SELECT
             r.id, r.source, r.destination, r.match_type, r.status_code, r.is_active,
-            COALESCE(r.include_query_params, 0) as include_query_params,
-            COALESCE(r.preserve_query_params, 0) as preserve_query_params,
+            COALESCE(r.preserve_query_string, 0) as preserve_query_string,
+            COALESCE(r.include_subdomains, 0) as include_subdomains,
+            COALESCE(r.subpath_matching, 0) as subpath_matching,
+            COALESCE(r.preserve_path_suffix, 1) as preserve_path_suffix,
             r.source_plugin,
             r.created_by, r.created_at, r.updated_at, r.updated_by,
             COALESCE(a.hit_count, 0) as hit_count,
@@ -282,13 +351,21 @@ export class RedirectService {
         updates.push('is_active = ?')
         bindings.push(input.isActive ? 1 : 0)
       }
-      if (input.includeQueryParams !== undefined) {
-        updates.push('include_query_params = ?')
-        bindings.push(input.includeQueryParams ? 1 : 0)
+      if (input.preserveQueryString !== undefined) {
+        updates.push('preserve_query_string = ?')
+        bindings.push(input.preserveQueryString ? 1 : 0)
       }
-      if (input.preserveQueryParams !== undefined) {
-        updates.push('preserve_query_params = ?')
-        bindings.push(input.preserveQueryParams ? 1 : 0)
+      if (input.includeSubdomains !== undefined) {
+        updates.push('include_subdomains = ?')
+        bindings.push(input.includeSubdomains ? 1 : 0)
+      }
+      if (input.subpathMatching !== undefined) {
+        updates.push('subpath_matching = ?')
+        bindings.push(input.subpathMatching ? 1 : 0)
+      }
+      if (input.preservePathSuffix !== undefined) {
+        updates.push('preserve_path_suffix = ?')
+        bindings.push(input.preservePathSuffix ? 1 : 0)
       }
 
       // Track who made this update
@@ -326,6 +403,11 @@ export class RedirectService {
       // Invalidate cache after successful update
       invalidateRedirectCache()
 
+      // Sync to Cloudflare if enabled (async, non-blocking)
+      if (updated) {
+        this.syncToCloudflareIfEnabled(updated)
+      }
+
       return {
         success: true,
         redirect: updated!,
@@ -348,6 +430,9 @@ export class RedirectService {
    */
   async delete(id: string): Promise<RedirectOperationResult> {
     try {
+      // Get redirect before deleting (for Cloudflare sync)
+      const redirect = await this.getById(id)
+
       const result = await this.db
         .prepare(`DELETE FROM redirects WHERE id = ?`)
         .bind(id)
@@ -356,6 +441,11 @@ export class RedirectService {
       if (result.meta.changes > 0) {
         // Invalidate cache after successful deletion
         invalidateRedirectCache()
+
+        // Remove from Cloudflare if enabled (async, non-blocking)
+        if (redirect) {
+          this.removeFromCloudflareIfEnabled(redirect.source)
+        }
 
         return {
           success: true,
@@ -426,8 +516,10 @@ export class RedirectService {
       const query = `
         SELECT
           r.id, r.source, r.destination, r.match_type, r.status_code, r.is_active,
-          COALESCE(r.include_query_params, 0) as include_query_params,
-          COALESCE(r.preserve_query_params, 0) as preserve_query_params,
+          COALESCE(r.preserve_query_string, 0) as preserve_query_string,
+          COALESCE(r.include_subdomains, 0) as include_subdomains,
+          COALESCE(r.subpath_matching, 0) as subpath_matching,
+          COALESCE(r.preserve_path_suffix, 1) as preserve_path_suffix,
           r.source_plugin,
           r.created_by, r.created_at, r.updated_at, r.updated_by,
           COALESCE(a.hit_count, 0) as hit_count,
@@ -512,8 +604,10 @@ export class RedirectService {
         .prepare(`
           SELECT
             id, source, destination, match_type, status_code, is_active,
-            COALESCE(include_query_params, 0) as include_query_params,
-            COALESCE(preserve_query_params, 0) as preserve_query_params,
+            COALESCE(preserve_query_string, 0) as preserve_query_string,
+            COALESCE(include_subdomains, 0) as include_subdomains,
+            COALESCE(subpath_matching, 0) as subpath_matching,
+            COALESCE(preserve_path_suffix, 1) as preserve_path_suffix,
             created_by, created_at, updated_at
           FROM redirects
           WHERE LOWER(source) = ? AND is_active = 1
@@ -568,8 +662,10 @@ export class RedirectService {
       matchType: row.match_type as MatchType,
       statusCode: row.status_code as StatusCode,
       isActive: row.is_active === 1,
-      includeQueryParams: (row.include_query_params ?? 0) === 1,
-      preserveQueryParams: (row.preserve_query_params ?? 0) === 1,
+      preserveQueryString: (row.preserve_query_string ?? 0) === 1,
+      includeSubdomains: (row.include_subdomains ?? 0) === 1,
+      subpathMatching: (row.subpath_matching ?? 0) === 1,
+      preservePathSuffix: (row.preserve_path_suffix ?? 1) === 1,
       createdBy: row.created_by as string,
       createdAt: row.created_at as number,
       updatedAt: row.updated_at as number
@@ -596,6 +692,35 @@ export class RedirectService {
     }
 
     return redirect
+  }
+
+  /**
+   * Sync all eligible redirects to Cloudflare (manual sync)
+   */
+  async syncAllToCloudflare(): Promise<{ success: boolean; itemsAdded?: number; error?: string }> {
+    if (!this.cloudflareService?.isConfigured()) {
+      return { success: false, error: 'Cloudflare not configured. Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID environment variables.' }
+    }
+
+    try {
+      // Fetch all active redirects
+      const redirects = await this.list({ isActive: true, limit: 10000 })
+      const result = await this.cloudflareService.syncAll(redirects)
+      return result
+    } catch (error) {
+      console.error('[RedirectService] Full Cloudflare sync error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to sync to Cloudflare'
+      }
+    }
+  }
+
+  /**
+   * Check if Cloudflare integration is configured
+   */
+  isCloudflareConfigured(): boolean {
+    return this.cloudflareService?.isConfigured() ?? false
   }
 
   /**

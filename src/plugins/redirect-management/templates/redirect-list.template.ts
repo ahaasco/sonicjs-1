@@ -214,7 +214,7 @@ function renderFilterBar(filters: RedirectListPageData['filters']): HtmlEscapedS
           >
             <option value="">All Match Types</option>
             <option value="0" ${filters.matchType === '0' ? 'selected' : ''}>Exact</option>
-            <option value="1" ${filters.matchType === '1' ? 'selected' : ''}>Partial</option>
+            <option value="1" ${filters.matchType === '1' ? 'selected' : ''}>Wildcard</option>
             <option value="2" ${filters.matchType === '2' ? 'selected' : ''}>Regex</option>
           </select>
         </div>
@@ -340,7 +340,7 @@ function renderActiveFilterChips(filters: RedirectListPageData['filters']): Html
   if (filters.matchType) {
     const matchTypeLabels: Record<string, string> = {
       '0': 'Exact',
-      '1': 'Partial',
+      '1': 'Wildcard',
       '2': 'Regex'
     }
     chips.push(html`
@@ -629,7 +629,7 @@ function renderStatusBadge(code: number): HtmlEscapedString | Promise<HtmlEscape
 function renderMatchTypeBadge(type: number): HtmlEscapedString | Promise<HtmlEscapedString> {
   const labels: Record<number, string> = {
     0: 'Exact',
-    1: 'Partial',
+    1: 'Wildcard',
     2: 'Regex'
   }
 

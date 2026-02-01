@@ -10,9 +10,9 @@
 export enum MatchType {
   /** Exact URL match */
   EXACT = 0,
-  /** Partial URL match (contains) */
-  PARTIAL = 1,
-  /** Regular expression pattern match */
+  /** Wildcard URL match (prefix/contains) - syncs to Cloudflare */
+  WILDCARD = 1,
+  /** Regular expression pattern match - NOT synced to Cloudflare */
   REGEX = 2
 }
 
@@ -43,10 +43,14 @@ export interface Redirect {
   createdAt: number
   /** Timestamp when redirect was last updated (milliseconds) */
   updatedAt: number
-  /** Whether to include query params in URL matching */
-  includeQueryParams: boolean
-  /** Whether to preserve query params when redirecting */
-  preserveQueryParams: boolean
+  /** Whether to preserve query string when redirecting (Cloudflare: preserve_query_string) */
+  preserveQueryString: boolean
+  /** Whether to include subdomains in matching (Cloudflare: include_subdomains) */
+  includeSubdomains: boolean
+  /** Whether to enable subpath matching (Cloudflare: subpath_matching) */
+  subpathMatching: boolean
+  /** Whether to preserve path suffix when redirecting (Cloudflare: preserve_path_suffix) */
+  preservePathSuffix: boolean
   /** Number of times this redirect has been triggered (populated via JOIN with redirect_analytics) */
   hitCount?: number
   /** Timestamp of last redirect hit in milliseconds (populated via JOIN with redirect_analytics) */
@@ -67,6 +71,8 @@ export interface Redirect {
 export interface RedirectSettings {
   /** Whether redirect processing is enabled */
   enabled: boolean
+  /** Whether to auto-sync eligible redirects to Cloudflare Bulk Redirects */
+  autoOffloadEnabled?: boolean
 }
 
 /**
@@ -101,10 +107,14 @@ export interface CreateRedirectInput {
   statusCode?: StatusCode
   /** Whether this redirect is currently active (default: true) */
   isActive?: boolean
-  /** Whether to include query params in URL matching (default: false) */
-  includeQueryParams?: boolean
-  /** Whether to preserve query params when redirecting (default: false) */
-  preserveQueryParams?: boolean
+  /** Whether to preserve query string when redirecting (default: false) */
+  preserveQueryString?: boolean
+  /** Whether to include subdomains in matching (default: false) */
+  includeSubdomains?: boolean
+  /** Whether to enable subpath matching (default: false) */
+  subpathMatching?: boolean
+  /** Whether to preserve path suffix when redirecting (default: true) */
+  preservePathSuffix?: boolean
   /** Plugin ID that created this redirect (null if created via admin UI) */
   sourcePlugin?: string | null
 }
@@ -123,10 +133,14 @@ export interface UpdateRedirectInput {
   statusCode?: StatusCode
   /** Whether this redirect is currently active */
   isActive?: boolean
-  /** Whether to include query params in URL matching */
-  includeQueryParams?: boolean
-  /** Whether to preserve query params when redirecting */
-  preserveQueryParams?: boolean
+  /** Whether to preserve query string when redirecting */
+  preserveQueryString?: boolean
+  /** Whether to include subdomains in matching */
+  includeSubdomains?: boolean
+  /** Whether to enable subpath matching */
+  subpathMatching?: boolean
+  /** Whether to preserve path suffix when redirecting */
+  preservePathSuffix?: boolean
 }
 
 /**
@@ -185,16 +199,20 @@ export interface ParsedRedirectRow {
   source_url: string
   /** Destination URL to redirect to */
   destination_url: string
-  /** Match type as string: 'exact', 'partial', 'regex' or '0', '1', '2' */
+  /** Match type as string: 'exact', 'wildcard', 'regex' or '0', '1', '2' */
   match_type: string
   /** HTTP status code as string */
   status_code: string
   /** Active status as string: 'true' or 'false' */
   active: string
-  /** Whether to include query params in matching */
-  include_query_params?: string
-  /** Whether to preserve query params when redirecting */
-  preserve_query_params?: string
+  /** Whether to preserve query string when redirecting */
+  preserve_query_string?: string
+  /** Whether to include subdomains in matching */
+  include_subdomains?: string
+  /** Whether to enable subpath matching */
+  subpath_matching?: string
+  /** Whether to preserve path suffix when redirecting */
+  preserve_path_suffix?: string
 }
 
 /**
@@ -242,8 +260,12 @@ export interface ValidatedRedirectRow {
   statusCode: StatusCode
   /** Whether redirect is active */
   isActive: boolean
-  /** Whether to include query params in matching */
-  includeQueryParams: boolean
-  /** Whether to preserve query params when redirecting */
-  preserveQueryParams: boolean
+  /** Whether to preserve query string when redirecting */
+  preserveQueryString: boolean
+  /** Whether to include subdomains in matching */
+  includeSubdomains: boolean
+  /** Whether to enable subpath matching */
+  subpathMatching: boolean
+  /** Whether to preserve path suffix when redirecting */
+  preservePathSuffix: boolean
 }

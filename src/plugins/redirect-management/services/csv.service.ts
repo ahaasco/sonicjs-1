@@ -57,8 +57,10 @@ export function parseCSV(content: string): CSVParseResult {
         match_type: record.match_type || 'exact',
         status_code: record.status_code || '301',
         active: record.active || 'true',
-        include_query_params: record.include_query_params,
-        preserve_query_params: record.preserve_query_params
+        preserve_query_string: record.preserve_query_string,
+        include_subdomains: record.include_subdomains,
+        subpath_matching: record.subpath_matching,
+        preserve_path_suffix: record.preserve_path_suffix
       })
     }
   } catch (error) {
@@ -86,7 +88,7 @@ export function parseCSV(content: string): CSVParseResult {
  * // Returns: "id,source_url,destination_url,match_type,..."
  */
 export function generateCSV(redirects: Redirect[]): string {
-  // Define headers
+  // Define headers (Cloudflare-aligned column names)
   const headers = [
     'id',
     'source_url',
@@ -94,8 +96,10 @@ export function generateCSV(redirects: Redirect[]): string {
     'match_type',
     'status_code',
     'active',
-    'include_query_params',
-    'preserve_query_params',
+    'preserve_query_string',
+    'include_subdomains',
+    'subpath_matching',
+    'preserve_path_suffix',
     'created_at',
     'updated_at'
   ]
@@ -108,8 +112,10 @@ export function generateCSV(redirects: Redirect[]): string {
     matchTypeToLabel(r.matchType),
     r.statusCode.toString(),
     r.isActive ? 'true' : 'false',
-    r.includeQueryParams ? 'true' : 'false',
-    r.preserveQueryParams ? 'true' : 'false',
+    r.preserveQueryString ? 'true' : 'false',
+    r.includeSubdomains ? 'true' : 'false',
+    r.subpathMatching ? 'true' : 'false',
+    r.preservePathSuffix ? 'true' : 'false',
     new Date(r.createdAt).toISOString(),
     new Date(r.updatedAt).toISOString()
   ])
@@ -127,14 +133,14 @@ export function generateCSV(redirects: Redirect[]): string {
  * Convert match type number to text label
  *
  * @param matchType - Numeric match type (0, 1, 2)
- * @returns Text label ('exact', 'partial', 'regex')
+ * @returns Text label ('exact', 'wildcard', 'regex')
  */
 export function matchTypeToLabel(matchType: MatchType): string {
   switch (matchType) {
     case 0:
       return 'exact'
     case 1:
-      return 'partial'
+      return 'wildcard'
     case 2:
       return 'regex'
     default:
@@ -155,7 +161,8 @@ export function labelToMatchType(label: string): MatchType | undefined {
     case 'exact':
     case '0':
       return 0
-    case 'partial':
+    case 'wildcard':
+    case 'partial':  // Keep backwards compatibility with old CSV exports
     case '1':
       return 1
     case 'regex':
@@ -191,7 +198,7 @@ export function buildExportFilename(filters: {
   }
 
   if (filters.matchType !== undefined) {
-    const labels = { '0': 'exact', '1': 'partial', '2': 'regex' }
+    const labels = { '0': 'exact', '1': 'wildcard', '2': 'regex' }
     parts.push(`${labels[filters.matchType as keyof typeof labels] || filters.matchType}-match`)
   }
 
@@ -298,7 +305,7 @@ export async function validateCSVBatch(
         line: lineNumber,
         field: 'match_type',
         value: row.match_type,
-        error: 'Invalid match type. Must be exact, partial, regex (or 0, 1, 2)'
+        error: 'Invalid match type. Must be exact, wildcard, regex (or 0, 1, 2)'
       })
       continue
     }
@@ -350,8 +357,10 @@ export async function validateCSVBatch(
       matchType: matchType as MatchType,
       statusCode: statusCode as StatusCode,
       isActive: row.active?.toLowerCase() !== 'false',
-      includeQueryParams: row.include_query_params?.toLowerCase() === 'true',
-      preserveQueryParams: row.preserve_query_params?.toLowerCase() === 'true'
+      preserveQueryString: row.preserve_query_string?.toLowerCase() === 'true',
+      includeSubdomains: row.include_subdomains?.toLowerCase() === 'true',
+      subpathMatching: row.subpath_matching?.toLowerCase() === 'true',
+      preservePathSuffix: row.preserve_path_suffix?.toLowerCase() !== 'false'  // Default true
     })
   }
 
