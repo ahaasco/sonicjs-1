@@ -25,7 +25,6 @@ export function createRedirectMiddleware(options: RedirectMiddlewareOptions = {}
 
     // Skip redirect processing for admin routes
     if (pathname.startsWith('/admin/redirects')) {
-      console.error('[RedirectMiddleware] Skipping admin route:', pathname, c.req.method)
       await next()
       return
     }
