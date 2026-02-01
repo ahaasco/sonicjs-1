@@ -221,7 +221,7 @@ export class RedirectService {
   /**
    * Update an existing redirect
    */
-  async update(id: string, input: UpdateRedirectInput): Promise<RedirectOperationResult> {
+  async update(id: string, input: UpdateRedirectInput, userId?: string): Promise<RedirectOperationResult> {
     try {
       // Fetch existing redirect
       const existing = await this.getById(id)
@@ -286,6 +286,12 @@ export class RedirectService {
       if (input.preserveQueryParams !== undefined) {
         updates.push('preserve_query_params = ?')
         bindings.push(input.preserveQueryParams ? 1 : 0)
+      }
+
+      // Track who made this update
+      if (userId) {
+        updates.push('updated_by = ?')
+        bindings.push(userId)
       }
 
       // Always update updated_at
@@ -535,7 +541,7 @@ export class RedirectService {
    * @internal Helper method for type conversion
    */
   private mapRowToRedirect(row: any): Redirect {
-    return {
+    const redirect: Redirect = {
       id: row.id as string,
       source: row.source as string,
       destination: row.destination as string,
@@ -546,13 +552,27 @@ export class RedirectService {
       preserveQueryParams: (row.preserve_query_params ?? 0) === 1,
       createdBy: row.created_by as string,
       createdAt: row.created_at as number,
-      updatedAt: row.updated_at as number,
-      hitCount: (row.hit_count ?? 0) as number,
-      lastHitAt: row.last_hit_at as number | null,
-      createdByName: row.created_by_name as string | undefined,
-      updatedByName: row.updated_by_name as string | undefined,
-      updatedBy: row.updated_by as string | undefined
+      updatedAt: row.updated_at as number
     }
+
+    // Add optional analytics fields if present
+    if (row.hit_count !== undefined) {
+      redirect.hitCount = (row.hit_count ?? 0) as number
+    }
+    if (row.last_hit_at !== undefined) {
+      redirect.lastHitAt = row.last_hit_at as number | null
+    }
+    if (row.created_by_name) {
+      redirect.createdByName = row.created_by_name as string
+    }
+    if (row.updated_by_name) {
+      redirect.updatedByName = row.updated_by_name as string
+    }
+    if (row.updated_by !== undefined) {
+      redirect.updatedBy = row.updated_by as string
+    }
+
+    return redirect
   }
 
   /**
