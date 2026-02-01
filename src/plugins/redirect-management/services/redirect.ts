@@ -190,12 +190,19 @@ export class RedirectService {
       const row = await this.db
         .prepare(`
           SELECT
-            id, source, destination, match_type, status_code, is_active,
-            COALESCE(include_query_params, 0) as include_query_params,
-            COALESCE(preserve_query_params, 0) as preserve_query_params,
-            created_by, created_at, updated_at
-          FROM redirects
-          WHERE id = ?
+            r.id, r.source, r.destination, r.match_type, r.status_code, r.is_active,
+            COALESCE(r.include_query_params, 0) as include_query_params,
+            COALESCE(r.preserve_query_params, 0) as preserve_query_params,
+            r.created_by, r.created_at, r.updated_at, r.updated_by,
+            COALESCE(a.hit_count, 0) as hit_count,
+            a.last_hit_at,
+            creator.first_name || ' ' || creator.last_name as created_by_name,
+            updater.first_name || ' ' || updater.last_name as updated_by_name
+          FROM redirects r
+          LEFT JOIN redirect_analytics a ON r.id = a.redirect_id
+          LEFT JOIN users creator ON r.created_by = creator.id
+          LEFT JOIN users updater ON r.updated_by = updater.id
+          WHERE r.id = ?
         `)
         .bind(id)
         .first()
@@ -376,19 +383,19 @@ export class RedirectService {
 
       // Build WHERE clause from filters
       if (filter?.isActive !== undefined) {
-        conditions.push('is_active = ?')
+        conditions.push('r.is_active = ?')
         bindings.push(filter.isActive ? 1 : 0)
       }
       if (filter?.statusCode !== undefined) {
-        conditions.push('status_code = ?')
+        conditions.push('r.status_code = ?')
         bindings.push(filter.statusCode)
       }
       if (filter?.matchType !== undefined) {
-        conditions.push('match_type = ?')
+        conditions.push('r.match_type = ?')
         bindings.push(filter.matchType)
       }
       if (filter?.search) {
-        conditions.push('(source LIKE ? OR destination LIKE ?)')
+        conditions.push('(r.source LIKE ? OR r.destination LIKE ?)')
         const searchPattern = `%${filter.search}%`
         bindings.push(searchPattern, searchPattern)
       }
@@ -401,13 +408,20 @@ export class RedirectService {
 
       const query = `
         SELECT
-          id, source, destination, match_type, status_code, is_active,
-          COALESCE(include_query_params, 0) as include_query_params,
-          COALESCE(preserve_query_params, 0) as preserve_query_params,
-          created_by, created_at, updated_at
-        FROM redirects
+          r.id, r.source, r.destination, r.match_type, r.status_code, r.is_active,
+          COALESCE(r.include_query_params, 0) as include_query_params,
+          COALESCE(r.preserve_query_params, 0) as preserve_query_params,
+          r.created_by, r.created_at, r.updated_at, r.updated_by,
+          COALESCE(a.hit_count, 0) as hit_count,
+          a.last_hit_at,
+          creator.first_name || ' ' || creator.last_name as created_by_name,
+          updater.first_name || ' ' || updater.last_name as updated_by_name
+        FROM redirects r
+        LEFT JOIN redirect_analytics a ON r.id = a.redirect_id
+        LEFT JOIN users creator ON r.created_by = creator.id
+        LEFT JOIN users updater ON r.updated_by = updater.id
         ${whereClause}
-        ORDER BY created_at DESC
+        ORDER BY r.created_at DESC
         LIMIT ? OFFSET ?
       `
 
@@ -532,7 +546,12 @@ export class RedirectService {
       preserveQueryParams: (row.preserve_query_params ?? 0) === 1,
       createdBy: row.created_by as string,
       createdAt: row.created_at as number,
-      updatedAt: row.updated_at as number
+      updatedAt: row.updated_at as number,
+      hitCount: (row.hit_count ?? 0) as number,
+      lastHitAt: row.last_hit_at as number | null,
+      createdByName: row.created_by_name as string | undefined,
+      updatedByName: row.updated_by_name as string | undefined,
+      updatedBy: row.updated_by as string | undefined
     }
   }
 
