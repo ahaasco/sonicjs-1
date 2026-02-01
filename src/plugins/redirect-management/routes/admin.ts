@@ -451,8 +451,10 @@ export function createRedirectAdminRoutes(): Hono {
 
       console.log('[Redirect Admin] Parsed input:', JSON.stringify(input, null, 2))
 
+      // Get user ID from context
+      const userId = c.get('user')?.id
       const service = new RedirectService(db)
-      const result = await service.update(id, input)
+      const result = await service.update(id, input, userId)
 
       console.log('[Redirect Admin] Service result:', JSON.stringify({ success: result.success, error: result.error, warning: result.warning }, null, 2))
 
